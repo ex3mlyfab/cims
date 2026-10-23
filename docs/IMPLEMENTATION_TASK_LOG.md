@@ -13,10 +13,10 @@ Authoritative progress record. Rules: update on start/block/complete; mark COMPL
 | CIMA-005 | 0 | ADRs | Document ULIDs, RBAC, allocation, audit, theme, PWA, display, real-time | CIMA-002 | COMPLETED | docs/adr/*.md | — | ADR-001..008 created | — | 2026-10-23 |
 | CIMA-006 | 0 | Skill files | Create skills/*/SKILL.md (7 skills incl. security, safety, UI, PWA) | CIMA-002 | COMPLETED | skills/** | — | Created | — | 2026-10-23 |
 | CIMA-007 | 0 | Consistency check | Validate docs/skills cross-references and task breakdown | CIMA-005, CIMA-006 | COMPLETED | — | — | Verified | Proceed to Phase 1 | 2026-10-23 |
-| CIMA-010 | 1 | ULID base convention | `HasUlids` trait/pattern, foreign-key helpers, factories convention | CIMA-007 | NOT_STARTED | | | | | |
-| CIMA-011 | 1 | MySQL migration | Switch local + test DB to MySQL 8, verify connection | CIMA-010 | NOT_STARTED | | | | | |
-| CIMA-012 | 1 | Convert auth-framing tables | ULID users/sessions/passkeys migrations without breaking Fortify/Chisel | CIMA-011, R1 | NOT_STARTED | | | | | |
-| CIMA-013 | 1 | ULID feature tests | Key generation, FK compatibility, migrations rollback | CIMA-012 | NOT_STARTED | | | | | |
+| CIMA-010 | 1 | ULID base convention | Laravel `HasUlids` applied directly (no bespoke trait), FK helpers documented | CIMA-007 | COMPLETED | app/Models/User.php | tests/Feature/UlidConventionsTest.php | 4/4 pass | Use Laravel `HasUlids`; don't invent an override trait | 2026-10-23 |
+| CIMA-011 | 1 | MySQL migration | Switch local DB to MySQL 8 (root/localdb), verify | CIMA-010 | COMPLETED | .env | migrate:fresh --seed | MySQL cims DB migrated & seeded | Test DB stays sqlite :memory: intentionally | 2026-10-23 |
+| CIMA-012 | 1 | Convert auth-framing tables | ULID users/sessions/passkeys without breaking Fortify/Chisel | CIMA-011 | COMPLETED | migrations (users, passkeys), app/Concerns/ProfileValidationRules.php | suite 44/44 | users.id ULID PK; foreignUlid FKs; passkey FK restrict; profileRules types → ?string | Passkey FK cascade→restrict preserves history | 2026-10-23 |
+| CIMA-013 | 1 | ULID feature tests | Key generation, FK compat, route binding | CIMA-012 | COMPLETED | tests/Feature/UlidConventionsTest.php | php artisan test | 4/4 pass; full suite 44/44 passing | Fixed env APP_KEY missing; installed node deps; produced vite build | 2026-10-23 |
 | CIMA-020 | 2 | Remove registration & self-deletion | Fortify registration closure, DELETE profile route/controller/UI removal | CIMA-013 | NOT_STARTED | | | | Preserve chisel markers |
 | CIMA-021 | 2 | Install Spatie Permission | Composer install, ULID-compatible publish/migrations | CIMA-012 | NOT_STARTED | | | | |
 | CIMA-022 | 2 | Super Admin + seeders | `super admin` role, IdempotentSeeder, Gate::before with tests | CIMA-021 | NOT_STARTED | | | | Protect last Super Admin |
@@ -49,3 +49,5 @@ Authoritative progress record. Rules: update on start/block/complete; mark COMPL
 ## Session Log
 
 **2026-10-23 (Phase 0):** Completed repository audit and documentation. Next task: **CIMA-010** (ULID conventions for Phase 1). Blockers: none, but stakeholder sign-offs on R3/R4 recommended before Phase 5.
+
+**2026-10-23 (Phase 1 complete):** CIMA-010..013 done — users/sessions/passkeys now use ULID keys, local DB switched to MySQL (`cims`, user root), ULID feature tests added. Environment repair: generated APP_KEY, installed npm dependencies, produced Vite build, typed user-id helpers as `?string`. Full suite: 44/44 passing. Next task: **CIMA-020** (remove registration & self-service deletion, Phase 2).
