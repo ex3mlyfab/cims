@@ -4,6 +4,7 @@ namespace Tests\Feature\Settings;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
@@ -61,39 +62,26 @@ class ProfileUpdateTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account()
+    /*
+     * CIMA-020: self-service account deletion is intentionally unavailable;
+     * accounts are deactivated by authorized administrators instead.
+     */
+    public function test_self_service_account_deletion_is_unavailable()
     {
         $user = User::factory()->create();
 
+        $this->assertFalse(
+            Route::has('profile.destroy'),
+        );
+
         $response = $this
             ->actingAs($user)
-            ->delete(route('profile.destroy'), [
+            ->delete('/settings/profile', [
                 'password' => 'password',
             ]);
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('home'));
-
-        $this->assertGuest();
-        $this->assertNull($user->fresh());
-    }
-
-    public function test_correct_password_must_be_provided_to_delete_account()
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->from(route('profile.edit'))
-            ->delete(route('profile.destroy'), [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrors('password')
-            ->assertRedirect(route('profile.edit'));
-
+        $response->assertStatus(405);
         $this->assertNotNull($user->fresh());
+        $this->assertAuthenticatedAs($user);
     }
 }

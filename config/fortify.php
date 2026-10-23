@@ -167,9 +167,7 @@ return [
     */
 
     'features' => [
-        /* @chisel-registration */
-        Features::registration(),
-        /* @end-chisel-registration */
+        /* Registration removed: CIMA requires administrator-managed users only (docs/adr/ADR-002). */
         Features::resetPasswords(),
         /* @chisel-email-verification */
         Features::emailVerification(),
