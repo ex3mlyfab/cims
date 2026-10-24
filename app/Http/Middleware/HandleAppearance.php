@@ -17,6 +17,7 @@ class HandleAppearance
     public function handle(Request $request, Closure $next): Response
     {
         View::share('appearance', $request->cookie('appearance') ?? 'system');
+        View::share('themePreset', $request->cookie('cima_theme_preset') ?? 'clinical-indigo');
 
         return $next($request);
     }

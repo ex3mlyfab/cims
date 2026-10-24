@@ -9,9 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-/* @chisel-passkeys */
 import PasskeyVerify from '@/components/passkey-verify';
-/* @end-chisel-passkeys */
 
 type Props = {
     status?: string;
@@ -23,9 +21,7 @@ export default function Login({ status, canResetPassword }: Props) {
         <>
             <Head title="Log in" />
 
-            {/* @chisel-passkeys */}
             <PasskeyVerify />
-            {/* @end-chisel-passkeys */}
 
             <Form
                 {...store.form()}

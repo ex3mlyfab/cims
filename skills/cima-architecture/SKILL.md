@@ -3,6 +3,7 @@
 Read this before implementing any CIMA module.
 
 ## Rules
+
 1. **Thin controllers** — controllers dispatch to Actions/Services (`app/Actions/*`, `app/Services/*`) or return Inertia responses with view-data only. No business rules in controllers or routes.
 2. **Form Requests** for validation; message customization there, not inline.
 3. **Policies** for every model with protected operations; combine with Spatie permissions — permissions gate "who may act on this widget", policies gate "is this record theirs".

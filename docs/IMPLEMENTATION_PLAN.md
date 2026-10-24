@@ -4,17 +4,17 @@ Clinical Information Management Application for hospital emergency departments.
 
 ## 0. Repository Audit (Phase 0 findings)
 
-| Area | Finding |
-|---|---|
-| Laravel | v13.38.0 (PHP ^8.3) — matches required stack |
-| Starter kit | Laravel/React starter kit with **Fortify** (not plain Laravel Auth), Inertia 3, React 19 + TypeScript |
-| Frontend tooling | Vite 8 ("vite-plus"/vp), Tailwind CSS 4, shadcn/ui-style Radix components in `resources/js/components/ui`, React compiler enabled, Wayfinder for route typing |
-| Auth | Fortify: login, 2FA, passkeys, registration (self-service), profile update + **self-service account deletion** (`settings/profile` DELETE) — both must be removed |
-| Database | **Currently SQLite** (`.env` `DB_CONNECTION=sqlite`); MySQL required before Phase 1 |
-| ULIDs | Not present; all tables use auto-incrementing `id()`. `users`, `sessions`, `passkeys` migrations need ULID conversion or conversion of new tables + incremental plan for auth-framing tables |
-| Spatie Permission | **Not installed** — must be added and its schema adapted for ULIDs |
-| Testing | PHPUnit 12 configured (`artisan test`); Pest not installed |
-| Appearance | `HandleAppearance` middleware + `use-appearance` hook (light/dark) exists — good base for the theme engine |
+| Area              | Finding                                                                                                                                                                                      |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Laravel           | v13.38.0 (PHP ^8.3) — matches required stack                                                                                                                                                 |
+| Starter kit       | Laravel/React starter kit with **Fortify** (not plain Laravel Auth), Inertia 3, React 19 + TypeScript                                                                                        |
+| Frontend tooling  | Vite 8 ("vite-plus"/vp), Tailwind CSS 4, shadcn/ui-style Radix components in `resources/js/components/ui`, React compiler enabled, Wayfinder for route typing                                |
+| Auth              | Fortify: login, 2FA, passkeys, registration (self-service), profile update + **self-service account deletion** (`settings/profile` DELETE) — both must be removed                            |
+| Database          | **Currently SQLite** (`.env` `DB_CONNECTION=sqlite`); MySQL required before Phase 1                                                                                                          |
+| ULIDs             | Not present; all tables use auto-incrementing `id()`. `users`, `sessions`, `passkeys` migrations need ULID conversion or conversion of new tables + incremental plan for auth-framing tables |
+| Spatie Permission | **Not installed** — must be added and its schema adapted for ULIDs                                                                                                                           |
+| Testing           | PHPUnit 12 configured (`artisan test`); Pest not installed                                                                                                                                   |
+| Appearance        | `HandleAppearance` middleware + `use-appearance` hook (light/dark) exists — good base for the theme engine                                                                                   |
 
 ## 1. Objectives & Scope
 
@@ -44,9 +44,11 @@ Manage ED patient flow: registration, clinical encounters, bed allocation/transf
 - Status model: **four distinct axes** — treatment workflow status, encounter status, bed occupancy, disposition (never one column).
 
 ### Bed state machine
+
 `available → occupied → cleaning → available | out_of_service`. An allocation row must exist for an occupied bed; out-of-service beds cannot receive allocations (enforced in service + DB check where supported).
 
 ### Allocation integrity
+
 `bed_allocations` has a MySQL functional unique index on `(bed_id, COALESCE(ended_at, sentinel))` equivalent enforced in the allocation service with `SELECT ... FOR UPDATE` inside a transaction; transferred allocations are closed, never deleted.
 
 ## 4. Auth & Authorization
@@ -84,26 +86,26 @@ Migrate local DB from SQLite → MySQL 8 (Phase 1 gate). Production: `.env` secr
 
 ## 11. Phases & Gates
 
-| Phase | Content | Gate |
-|---|---|---|
-| 0 | Audit + docs + skills (this) | Docs complete & consistent |
-| 1 | ULID conventions, MySQL, base trait, factories | ULID keys/FKs pass migration tests |
-| 2 | Auth hardening + Spatie RBAC + Super Admin | Registration/deletion removed; authz enforced |
-| 3 | Branding + theme engine | Themes work app-wide, a11y checks pass |
-| 4 | Admin modules (users, roles, perms, mgmt team, wards, beds, bed history) | CRUD + permissions + history verified |
-| 5 | Patients + encounters + status workflow | Lifecycle validated by tests |
-| 6 | Allocation/transfer/discharge | No invalid allocation states possible |
-| 7 | Public display | Privacy tests pass |
-| 8 | PWA | Installable, no sensitive caching |
-| 9 | QA + deployment | Release-critical tests pass |
+| Phase | Content                                                                  | Gate                                          |
+| ----- | ------------------------------------------------------------------------ | --------------------------------------------- |
+| 0     | Audit + docs + skills (this)                                             | Docs complete & consistent                    |
+| 1     | ULID conventions, MySQL, base trait, factories                           | ULID keys/FKs pass migration tests            |
+| 2     | Auth hardening + Spatie RBAC + Super Admin                               | Registration/deletion removed; authz enforced |
+| 3     | Branding + theme engine                                                  | Themes work app-wide, a11y checks pass        |
+| 4     | Admin modules (users, roles, perms, mgmt team, wards, beds, bed history) | CRUD + permissions + history verified         |
+| 5     | Patients + encounters + status workflow                                  | Lifecycle validated by tests                  |
+| 6     | Allocation/transfer/discharge                                            | No invalid allocation states possible         |
+| 7     | Public display                                                           | Privacy tests pass                            |
+| 8     | PWA                                                                      | Installable, no sensitive caching             |
+| 9     | QA + deployment                                                          | Release-critical tests pass                   |
 
 ## 12. Risks, Assumptions, Open Decisions
 
-| # | Item | Type | Default adopted |
-|---|---|---|---|
-| R1 | Spatie Permission ULID compatibility | Risk | Verify package version & use package's ULID config; wrap ADR-002 |
-| R2 | MySQL not yet configured locally | Assumption | Switch `.env` in Phase 1; SQLite kept for CI fallback |
-| R3 | Age/sex on public display (privacy) | Decision | Show age **bands** by default; exact age behind a branding toggle pending stakeholder approval |
-| R4 | Status labels | Assumption | Proposed workflow labels used until hospital sign-off |
-| R5 | Duplicate patient detection scope | Open | Manual search-based reconciliation in Phase 5; automated matching deferred |
-| R6 | Chisel scaffolding (Fortify/passkeys, `@chisel-*` markers) | Risk | Preserve chisel markers/features while removing registration/deletion |
+| #   | Item                                                       | Type       | Default adopted                                                                                |
+| --- | ---------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| R1  | Spatie Permission ULID compatibility                       | Risk       | Verify package version & use package's ULID config; wrap ADR-002                               |
+| R2  | MySQL not yet configured locally                           | Assumption | Switch `.env` in Phase 1; SQLite kept for CI fallback                                          |
+| R3  | Age/sex on public display (privacy)                        | Decision   | Show age **bands** by default; exact age behind a branding toggle pending stakeholder approval |
+| R4  | Status labels                                              | Assumption | Proposed workflow labels used until hospital sign-off                                          |
+| R5  | Duplicate patient detection scope                          | Open       | Manual search-based reconciliation in Phase 5; automated matching deferred                     |
+| R6  | Chisel scaffolding (Fortify/passkeys, `@chisel-*` markers) | Risk       | Preserve chisel markers/features while removing registration/deletion                          |

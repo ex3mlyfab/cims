@@ -3,6 +3,7 @@
 Read this before any migration/model work.
 
 ## Non-negotiables
+
 1. Every application-owned table: ULID primary key (`$table->ulid('id')->primary()`), model uses `HasUlids`.
 2. FKs to ULID PKs use `foreignUlid()->constrained(<table>)`, **cancel** on parent delete for clinical/audit tables: `->restrictOnDelete()`.
 3. Never auto-increment integers for application-owned tables. Route binding by ULID (default).
