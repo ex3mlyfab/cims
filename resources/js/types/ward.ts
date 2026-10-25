@@ -4,4 +4,6 @@ export type WardRecord = {
     code: string;
     name: string;
     capacity: number;
+    display_url?: string;
+    public_display_url?: string;
 };

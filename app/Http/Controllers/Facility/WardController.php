@@ -27,6 +27,8 @@ class WardController extends Controller
                 'code' => $ward->code,
                 'name' => $ward->name,
                 'capacity' => $ward->capacity,
+                'display_url' => route('display.ward', ['ward' => $ward->id], false),
+                'public_display_url' => route('display.ward', ['ward' => $ward->id], false),
             ]);
 
         return Inertia::render('wards/index', ['wards' => $wards]);

@@ -23,6 +23,7 @@ export default function WardsIndex({ wards }: { wards: WardRecord[] }) {
     const { permissions = [] } = usePage().props;
 
     const canManage = permissions.includes('wards.manage');
+    const canViewDisplay = permissions.includes('display.manage');
 
     return (
         <>
@@ -73,48 +74,66 @@ export default function WardsIndex({ wards }: { wards: WardRecord[] }) {
                                         {ward.capacity}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {canManage ? (
-                                            <div className="flex justify-end gap-1">
+                                        <div className="flex justify-end gap-1">
+                                            {canViewDisplay && ward.display_url && (
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     asChild
                                                 >
                                                     <Link
-                                                        href={edit(ward.id)}
-                                                        data-test={`edit-ward-${ward.id}`}
+                                                        href={ward.display_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        data-test={`display-ward-${ward.id}`}
                                                     >
-                                                        Edit
+                                                        Display
                                                     </Link>
                                                 </Button>
-                                                <Form
-                                                    {...WardController.destroy.form(
-                                                        ward.id,
-                                                    )}
-                                                    options={{
-                                                        preserveScroll: true,
-                                                    }}
-                                                    data-test={`delete-ward-${ward.id}`}
-                                                >
-                                                    {({ processing }) => (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            disabled={
-                                                                processing
-                                                            }
-                                                            className="text-destructive hover:text-destructive"
+                                            )}
+                                            {canManage ? (
+                                                <>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        asChild
+                                                    >
+                                                        <Link
+                                                            href={edit(ward.id)}
+                                                            data-test={`edit-ward-${ward.id}`}
                                                         >
-                                                            Delete
-                                                        </Button>
-                                                    )}
-                                                </Form>
-                                            </div>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground">
-                                                —
-                                            </span>
-                                        )}
+                                                            Edit
+                                                        </Link>
+                                                    </Button>
+                                                    <Form
+                                                        {...WardController.destroy.form(
+                                                            ward.id,
+                                                        )}
+                                                        options={{
+                                                            preserveScroll: true,
+                                                        }}
+                                                        data-test={`delete-ward-${ward.id}`}
+                                                    >
+                                                        {({ processing }) => (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                disabled={
+                                                                    processing
+                                                                }
+                                                                className="text-destructive hover:text-destructive"
+                                                            >
+                                                                Delete
+                                                            </Button>
+                                                        )}
+                                                    </Form>
+                                                </>
+                                            ) : canViewDisplay ? null : (
+                                                <span className="text-xs text-muted-foreground">
+                                                    —
+                                                </span>
+                                            )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
