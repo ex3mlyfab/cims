@@ -11,8 +11,10 @@ use App\Models\Team;
 use App\Models\TreatmentStatus;
 use App\Models\Ward;
 use App\Services\EncounterService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -37,7 +39,7 @@ class EncounterController extends Controller
                 $term = '%'.$query.'%';
 
                 return $builder->where(function ($inner) use ($term, $query) {
-                    $inner->whereHas('patient', function ($patientQuery) use ($term, $query) {
+                    $inner->whereHas('patient', function ($patientQuery) use ($term) {
                         $patientQuery->where('fullname', 'like', $term)
                             ->orWhere('patient_code', 'like', $term);
                     })->orWhere('notes', 'like', $term);
@@ -57,6 +59,51 @@ class EncounterController extends Controller
             ->paginate(25)
             ->appends($request->query());
 
+        $formatEncounterDate = static function ($value): ?string {
+            if ($value === null) {
+                return null;
+            }
+
+            if (is_string($value)) {
+                return Carbon::parse($value)->format(DATE_ATOM);
+            }
+
+            return (string) $value;
+        };
+
+        $encounterRows = $encounters->getCollection()->map(static function (Encounter $encounter) use ($formatEncounterDate): array {
+            $patient = $encounter->patient()->first();
+            $ward = $encounter->ward()->first();
+            $team = $encounter->team()->first();
+            $treatmentStatus = $encounter->treatmentStatus()->first();
+
+            return [
+                'id' => $encounter->id,
+                'patient' => [
+                    'id' => $patient?->id,
+                    'fullname' => $patient?->fullname,
+                    'patient_code' => $patient?->patient_code,
+                ],
+                'ward' => [
+                    'id' => $ward?->id,
+                    'code' => $ward?->code,
+                    'name' => $ward?->name,
+                ],
+                'team' => [
+                    'id' => $team?->id,
+                    'name' => $team?->name,
+                ],
+                'treatment_status' => [
+                    'id' => $treatmentStatus?->id,
+                    'label' => $treatmentStatus?->label,
+                ],
+                'arrived_at' => $formatEncounterDate($encounter->arrived_at),
+                'discharged_at' => $formatEncounterDate($encounter->discharged_at),
+                'is_active' => $encounter->discharged_at === null,
+                'notes' => $encounter->notes,
+            ];
+        })->all();
+
         return Inertia::render('encounters/index', [
             'query' => $query,
             'filters' => [
@@ -66,31 +113,7 @@ class EncounterController extends Controller
                 'from' => $from,
                 'to' => $to,
             ],
-            'encounters' => $encounters->through(static fn (Encounter $encounter): array => [
-                'id' => $encounter->id,
-                'patient' => [
-                    'id' => $encounter->patient->id,
-                    'fullname' => $encounter->patient->fullname,
-                    'patient_code' => $encounter->patient->patient_code,
-                ],
-                'ward' => [
-                    'id' => $encounter->ward->id,
-                    'code' => $encounter->ward->code,
-                    'name' => $encounter->ward->name,
-                ],
-                'team' => [
-                    'id' => $encounter->team->id,
-                    'name' => $encounter->team->name,
-                ],
-                'treatment_status' => [
-                    'id' => $encounter->treatmentStatus->id,
-                    'label' => $encounter->treatmentStatus->label,
-                ],
-                'arrived_at' => $encounter->arrived_at?->format(DATE_ATOM),
-                'discharged_at' => $encounter->discharged_at?->format(DATE_ATOM),
-                'is_active' => $encounter->discharged_at === null,
-                'notes' => $encounter->notes,
-            ])->all(),
+            'encounters' => $encounterRows,
             'wards' => Ward::query()->orderBy('code')->get()->map(static fn (Ward $ward): array => [
                 'id' => $ward->id,
                 'code' => $ward->code,
@@ -119,7 +142,7 @@ class EncounterController extends Controller
         $selectedPatientId = $request->query('patient_id');
 
         if ($selectedPatientId !== null && $selectedPatientId !== '') {
-            $patient = Patient::query()->find($selectedPatientId);
+            $patient = Patient::query()->whereKey($selectedPatientId)->first();
         }
 
         $wards = Ward::query()
@@ -179,6 +202,29 @@ class EncounterController extends Controller
         ]);
     }
 
+    public function searchPatients(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'q' => ['required', 'string', 'min:2', 'max:120'],
+        ]);
+
+        $patients = Patient::query()
+            ->search($validated['q'])
+            ->orderBy('fullname')
+            ->orderBy('patient_code')
+            ->limit(20)
+            ->get()
+            ->map(static fn (Patient $patient): array => [
+                'id' => $patient->id,
+                'patient_code' => $patient->patient_code,
+                'fullname' => $patient->fullname,
+                'sex' => $patient->sex->value,
+                'age' => $patient->age,
+            ]);
+
+        return response()->json(['patients' => $patients]);
+    }
+
     public function store(EncounterFormRequest $request, EncounterService $service): RedirectResponse
     {
         $this->authorize('create', Encounter::class);
@@ -193,6 +239,10 @@ class EncounterController extends Controller
     public function edit(Encounter $encounter): Response
     {
         $this->authorize('update', $encounter);
+
+        $patient = $encounter->patient()->firstOrFail();
+        $arrivedAt = $encounter->getRawOriginal('arrived_at');
+        $arrivedAt = is_string($arrivedAt) ? $arrivedAt : null;
 
         $wards = Ward::query()->orderBy('code')->get()->map(static fn (Ward $ward): array => [
             'id' => $ward->id,
@@ -228,14 +278,14 @@ class EncounterController extends Controller
                 'team_id' => $encounter->team_id,
                 'treatment_status_id' => $encounter->treatment_status_id,
                 'notes' => $encounter->notes,
-                'arrived_at' => $encounter->arrived_at?->toDateTimeString(),
+                'arrived_at' => $arrivedAt,
             ],
             'patient' => [
-                'id' => $encounter->patient->id,
-                'patient_code' => $encounter->patient->patient_code,
-                'fullname' => $encounter->patient->fullname,
-                'sex' => $encounter->patient->sex->value,
-                'age' => $encounter->patient->age,
+                'id' => $patient->id,
+                'patient_code' => $patient->patient_code,
+                'fullname' => $patient->fullname,
+                'sex' => $patient->sex->value,
+                'age' => $patient->age,
             ],
             'wards' => $wards,
             'teams' => $teams,

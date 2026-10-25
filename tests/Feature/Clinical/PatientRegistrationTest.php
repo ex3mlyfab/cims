@@ -6,6 +6,7 @@ use App\Models\Patient;
 use App\Models\User;
 use App\Services\PatientService;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -147,6 +148,68 @@ class PatientRegistrationTest extends TestCase
             ->assertSessionHasErrors(['patient_code']);
 
         $this->assertSame(1, Patient::query()->count());
+    }
+
+    public function test_quick_registration_returns_the_created_patient_and_rejects_duplicate_codes(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $officer = User::factory()->create();
+        $officer->assignRole('nurse');
+
+        $this->actingAs($officer)
+            ->postJson(route('patients.store', absolute: false), [
+                'fullname' => 'Ada Obi',
+                'patient_code' => 'p-quick-01',
+                'sex' => 'female',
+                'age' => 34,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('patient.patient_code', 'P-QUICK-01')
+            ->assertJsonPath('patient.fullname', 'Ada Obi');
+
+        $this->actingAs($officer)
+            ->postJson(route('patients.store', absolute: false), [
+                'fullname' => 'Different Person',
+                'patient_code' => 'p-quick-01',
+                'sex' => 'male',
+                'age' => 44,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['patient_code']);
+
+        $this->assertSame(1, Patient::query()->count());
+    }
+
+    public function test_patient_code_is_normalized_for_model_creations_too(): void
+    {
+        $patient = Patient::query()->create([
+            'patient_code' => 'p-direct-01',
+            'fullname' => 'Ada Obi',
+            'sex' => 'female',
+            'age' => 34,
+        ]);
+
+        $this->assertSame('P-DIRECT-01', $patient->patient_code);
+    }
+
+    public function test_model_creations_cannot_duplicate_a_patient_code_with_different_case(): void
+    {
+        Patient::query()->create([
+            'patient_code' => 'p-case-01',
+            'fullname' => 'Ada Obi',
+            'sex' => 'female',
+            'age' => 34,
+        ]);
+
+        $this->expectException(QueryException::class);
+
+        Patient::query()->create([
+            'patient_code' => 'P-CASE-01',
+            'fullname' => 'Different Person',
+            'sex' => 'male',
+            'age' => 44,
+        ]);
     }
 
     public function test_search_matches_fullname_and_patient_code(): void

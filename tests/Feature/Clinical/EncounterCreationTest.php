@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Ward;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class EncounterCreationTest extends TestCase
@@ -106,6 +107,57 @@ class EncounterCreationTest extends TestCase
             'action' => 'encounter.created',
             'record_id' => $encounter->id,
         ]);
+    }
+
+    public function test_nurse_can_search_patients_for_the_admission_combobox(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $nurse = User::factory()->create();
+        $nurse->assignRole('nurse');
+        $patient = $this->patient();
+
+        $this->actingAs($nurse)
+            ->getJson(route('encounters.patients.search', ['q' => 'ada'], absolute: false))
+            ->assertOk()
+            ->assertJsonPath('patients.0.id', $patient->id)
+            ->assertJsonPath('patients.0.patient_code', $patient->patient_code)
+            ->assertJsonPath('patients.0.fullname', $patient->fullname);
+
+        $this->actingAs($nurse)
+            ->get(route('encounters.create', ['patient_id' => $patient->id], absolute: false))
+            ->assertInertia(fn ($page) => $page
+                ->component('encounters/create')
+                ->where('patient.id', $patient->id));
+    }
+
+    public function test_invalid_admission_submission_returns_field_errors_without_creating_an_encounter(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $nurse = User::factory()->create();
+        $nurse->assignRole('nurse');
+        $patient = $this->patient();
+
+        $this->actingAs($nurse)
+            ->from(route('encounters.create', absolute: false))
+            ->post(route('encounters.store', absolute: false), [
+                'patient_id' => $patient->id,
+                'ward_id' => '',
+                'bed_id' => '',
+                'team_id' => '',
+                'treatment_status_id' => '',
+                'notes' => 'Observation notes to preserve.',
+            ])
+            ->assertRedirect(route('encounters.create', absolute: false))
+            ->assertSessionHasErrors([
+                'ward_id',
+                'bed_id',
+                'team_id',
+                'treatment_status_id',
+            ]);
+
+        $this->assertSame(0, Encounter::query()->count());
     }
 
     public function test_hospital_administrator_can_transfer_a_patient_to_a_new_bed(): void
@@ -224,7 +276,7 @@ class EncounterCreationTest extends TestCase
 
         $this->assertTrue(
             $encounter->patient()->exists() &&
-            (bool) \Illuminate\Support\Facades\DB::table('bed_allocations')
+            (bool) DB::table('bed_allocations')
                 ->where('bed_id', $bed->id)
                 ->where('patient_id', $patient->id)
                 ->whereNotNull('ended_at')

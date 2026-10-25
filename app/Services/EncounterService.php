@@ -12,6 +12,7 @@ use App\Models\Team;
 use App\Models\TreatmentStatus;
 use App\Models\User;
 use App\Models\Ward;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -31,15 +32,15 @@ class EncounterService
     public function create(User $actor, array $data): Encounter
     {
         return DB::transaction(function () use ($actor, $data): Encounter {
-            $patient = Patient::query()->findOrFail($data['patient_id']);
-            $ward = Ward::query()->findOrFail($data['ward_id']);
+            $patient = Patient::query()->whereKey($data['patient_id'])->firstOrFail();
+            $ward = Ward::query()->whereKey($data['ward_id'])->firstOrFail();
             $bed = Bed::query()
                 ->where('ward_id', $ward->id)
                 ->whereKey($data['bed_id'])
                 ->firstOrFail();
 
-            $team = Team::query()->findOrFail($data['team_id']);
-            $treatmentStatus = TreatmentStatus::query()->findOrFail($data['treatment_status_id']);
+            $team = Team::query()->whereKey($data['team_id'])->firstOrFail();
+            $treatmentStatus = TreatmentStatus::query()->whereKey($data['treatment_status_id'])->firstOrFail();
 
             if (! $treatmentStatus->is_active) {
                 throw new BedInUse(__('The selected treatment status is inactive and cannot be used for a new admission.'));
@@ -79,13 +80,13 @@ class EncounterService
             $before = $this->summary($encounter);
 
             $patient = $encounter->patient()->firstOrFail();
-            $ward = Ward::query()->findOrFail($data['ward_id'] ?? $encounter->ward_id);
+            $ward = Ward::query()->whereKey($data['ward_id'] ?? $encounter->ward_id)->firstOrFail();
             $bed = Bed::query()
                 ->where('ward_id', $ward->id)
                 ->whereKey($data['bed_id'] ?? $encounter->bed_id)
                 ->firstOrFail();
-            $team = Team::query()->findOrFail($data['team_id'] ?? $encounter->team_id);
-            $treatmentStatus = TreatmentStatus::query()->findOrFail($data['treatment_status_id'] ?? $encounter->treatment_status_id);
+            $team = Team::query()->whereKey($data['team_id'] ?? $encounter->team_id)->firstOrFail();
+            $treatmentStatus = TreatmentStatus::query()->whereKey($data['treatment_status_id'] ?? $encounter->treatment_status_id)->firstOrFail();
 
             if (! $treatmentStatus->is_active) {
                 throw new BedInUse(__('The selected treatment status is inactive and cannot be used for an admission update.'));
@@ -172,8 +173,8 @@ class EncounterService
             'bed_id' => $encounter->bed_id,
             'team_id' => $encounter->team_id,
             'treatment_status_id' => $encounter->treatment_status_id,
-            'arrived_at' => $encounter->arrived_at?->toDateTimeString(),
-            'discharged_at' => $encounter->discharged_at?->toDateTimeString(),
+            'arrived_at' => $encounter->arrived_at ? Carbon::parse((string) $encounter->arrived_at)->toDateTimeString() : null,
+            'discharged_at' => $encounter->discharged_at ? Carbon::parse((string) $encounter->discharged_at)->toDateTimeString() : null,
         ];
     }
 }

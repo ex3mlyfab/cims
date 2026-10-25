@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Clinical\PatientFormRequest;
 use App\Models\Patient;
 use App\Services\PatientService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -45,11 +46,23 @@ class PatientController extends Controller
         ]);
     }
 
-    public function store(PatientFormRequest $request, PatientService $service): RedirectResponse
+    public function store(PatientFormRequest $request, PatientService $service): RedirectResponse|JsonResponse
     {
         $this->authorize('create', Patient::class);
 
-        $service->create($request->user(), $request->validated());
+        $patient = $service->create($request->user(), $request->validated());
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'patient' => [
+                    'id' => $patient->id,
+                    'patient_code' => $patient->patient_code,
+                    'fullname' => $patient->fullname,
+                    'sex' => $patient->sex->value,
+                    'age' => $patient->age,
+                ],
+            ], 201);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Patient registered.')]);
 

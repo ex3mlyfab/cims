@@ -5,7 +5,6 @@ namespace Tests\Feature\Facility;
 use App\Enums\BedStatus;
 use App\Enums\Sex;
 use App\Exceptions\BedInUse;
-use App\Models\Bed;
 use App\Models\Patient;
 use App\Models\User;
 use App\Models\Ward;

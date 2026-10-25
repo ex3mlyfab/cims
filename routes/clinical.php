@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['permission:encounters.manage'])->group(function () {
         Route::get('encounters', [EncounterController::class, 'index'])->name('encounters.index');
         Route::get('encounters/create', [EncounterController::class, 'create'])->name('encounters.create');
+        Route::get('encounters/patient-search', [EncounterController::class, 'searchPatients'])->name('encounters.patients.search');
         Route::post('encounters', [EncounterController::class, 'store'])->name('encounters.store');
         Route::get('encounters/{encounter}/edit', [EncounterController::class, 'edit'])->name('encounters.edit');
         Route::put('encounters/{encounter}', [EncounterController::class, 'update'])->name('encounters.update');

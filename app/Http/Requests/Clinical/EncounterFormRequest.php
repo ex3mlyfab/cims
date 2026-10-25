@@ -4,7 +4,6 @@ namespace App\Http\Requests\Clinical;
 
 use App\Models\Bed;
 use App\Models\Team;
-use App\Models\TreatmentStatus;
 use App\Models\Ward;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

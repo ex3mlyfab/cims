@@ -30,7 +30,7 @@ class TreatmentStatusService
      */
     public function create(User $actor, array $data): TreatmentStatus
     {
-        return DB::transaction(function () use ($actor, $data): TreatmentStatus {
+        return DB::transaction(function () use ($data): TreatmentStatus {
             $status = new TreatmentStatus;
             $status->slug = (string) $data['slug'];
             $status->label = (string) $data['label'];
@@ -49,7 +49,7 @@ class TreatmentStatusService
      */
     public function update(User $actor, TreatmentStatus $status, array $data): void
     {
-        DB::transaction(function () use ($actor, $status, $data): void {
+        DB::transaction(function () use ($status, $data): void {
             $before = $this->summary($status);
 
             if (isset($data['slug']) && (string) $data['slug'] !== $status->slug) {
@@ -79,7 +79,7 @@ class TreatmentStatusService
      */
     public function destroy(User $actor, TreatmentStatus $status): void
     {
-        DB::transaction(function () use ($actor, $status): void {
+        DB::transaction(function () use ($status): void {
             if ($this->usageCount($status) > 0) {
                 throw new TreatmentStatusInUse(
                     __('This status is used by existing admission records and cannot be deleted. Deactivate it instead.')

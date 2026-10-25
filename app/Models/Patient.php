@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Sex;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -45,6 +46,14 @@ class Patient extends Model
             'sex' => Sex::class,
             'age' => 'integer',
         ];
+    }
+
+    /** @return Attribute<string, string> */
+    protected function patientCode(): Attribute
+    {
+        return Attribute::make(
+            set: static fn (string $value): string => mb_strtoupper(trim($value)),
+        );
     }
 
     /**

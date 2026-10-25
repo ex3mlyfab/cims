@@ -20,20 +20,28 @@ class WardDisplayController extends Controller
             ->whereNull('discharged_at')
             ->get()
             ->map(function (Encounter $encounter): array {
-                $allocation = $encounter->bed?->activeAllocation()->first();
-                $startedAt = $allocation?->started_at ?? $encounter->arrived_at ?? now();
+                $bed = $encounter->bed;
+                $allocation = $bed ? $bed->activeAllocation()->first() : null;
+                $startedAt = $allocation ? $allocation->started_at : ($encounter->arrived_at ?? now());
+                $patient = $encounter->patient;
+                $treatmentStatus = $encounter->treatmentStatus;
+                $team = $encounter->team;
+
+                if (! $startedAt instanceof CarbonInterface) {
+                    $startedAt = Carbon::parse((string) $startedAt);
+                }
 
                 return [
                     'id' => $encounter->id,
-                    'patient_id_masked' => $this->maskPatientCode((string) ($encounter->patient?->patient_code ?? '')),
-                    'initials' => $this->initials($encounter->patient?->fullname ?? ''),
-                    'bed_number' => $encounter->bed?->number ?? '',
-                    'sex' => $encounter->patient?->sex?->label() ?? '',
-                    'age' => (int) ($encounter->patient?->age ?? 0),
+                    'patient_id_masked' => $this->maskPatientCode((string) ($patient->patient_code ?? '')),
+                    'initials' => $this->initials((string) ($patient->fullname ?? '')),
+                    'bed_number' => $bed ? $bed->number : '',
+                    'sex' => $patient->sex->label(),
+                    'age' => (int) ($patient->age ?? 0),
                     'duration' => $this->durationLabel($startedAt),
-                    'treatment_status' => $encounter->treatmentStatus?->label ?? 'Unassigned',
-                    'team' => $encounter->team?->name ?? 'Unassigned',
-                    'occupancy_status' => $encounter->bed?->status?->label() ?? 'Unknown',
+                    'treatment_status' => $treatmentStatus->label ?? 'Unassigned',
+                    'team' => $team->name ?? 'Unassigned',
+                    'occupancy_status' => $bed->status->label(),
                 ];
             })
             ->values();
@@ -63,8 +71,8 @@ class WardDisplayController extends Controller
 
     protected function initials(string $value): string
     {
-        $parts = preg_split('/\s+/', trim($value), -1, PREG_SPLIT_NO_EMPTY) ?? [];
-        $letters = array_slice($parts, 0, 2);
+        $parts = preg_split('/\s+/', trim($value), -1, PREG_SPLIT_NO_EMPTY);
+        $letters = is_array($parts) ? array_slice($parts, 0, 2) : [];
 
         return strtoupper(implode('', array_map(static fn (string $part): string => mb_substr($part, 0, 1), $letters)));
     }

@@ -143,7 +143,7 @@ class BedAllocationService
         return [
             'bed_id' => $allocation->bed_id,
             'patient_id' => $allocation->patient_id,
-            'started_at' => $allocation->started_at?->toDateTimeString(),
+            'started_at' => $allocation->started_at->toDateTimeString(),
             'ended_at' => $allocation->ended_at?->toDateTimeString(),
             'reason' => $allocation->reason,
         ];

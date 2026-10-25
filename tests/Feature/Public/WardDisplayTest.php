@@ -18,6 +18,21 @@ class WardDisplayTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_ward_display_is_public_and_does_not_require_authentication(): void
+    {
+        $ward = Ward::query()->create([
+            'code' => 'W-01',
+            'name' => 'Emergency Ward',
+            'capacity' => 12,
+        ]);
+
+        $this->get(route('display.ward', ['ward' => $ward->id], absolute: false))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('display/ward')
+                ->where('ward.code', 'W-01'));
+    }
+
     public function test_active_ward_occupancy_is_projected_for_public_display(): void
     {
         Date::setTestNow(now()->setTime(12, 0, 0));

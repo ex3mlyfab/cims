@@ -1,6 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
-import PatientController from '@/actions/App/Http/Controllers/Clinical/PatientController';
 import Heading from '@/components/heading';
 import PatientCreateModal from '@/components/patient-create-modal';
 import { Badge } from '@/components/ui/badge';
@@ -31,9 +30,10 @@ export default function PatientsIndex({
     search_query?: string;
     patients: PatientRecord[];
 }) {
-    const { permissions = [] } = usePage().props;
+    const { permissions } = usePage().props;
 
     const canCreate = permissions.includes('patients.create');
+    const canManageEncounters = permissions.includes('encounters.manage');
 
     const [search, setSearch] = useState(search_query);
     const [modalOpen, setModalOpen] = useState(false);
@@ -142,12 +142,13 @@ export default function PatientsIndex({
                                         Patient ID
                                     </TableHead>
                                     <TableHead>Fullname</TableHead>
-                                    <TableHead className="w-28">
-                                        Sex
-                                    </TableHead>
-                                    <TableHead className="w-20">
-                                        Age
-                                    </TableHead>
+                                    <TableHead className="w-28">Sex</TableHead>
+                                    <TableHead className="w-20">Age</TableHead>
+                                    {canManageEncounters && (
+                                        <TableHead className="w-28 text-right">
+                                            Action
+                                        </TableHead>
+                                    )}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -170,6 +171,23 @@ export default function PatientsIndex({
                                         <TableCell data-test="patient-age">
                                             {patient.age}
                                         </TableCell>
+                                        {canManageEncounters && (
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    asChild
+                                                >
+                                                    <Link
+                                                        href={`/encounters/create?patient_id=${encodeURIComponent(patient.id)}`}
+                                                        aria-label={`Admit ${patient.fullname}`}
+                                                        data-test="admit-patient"
+                                                    >
+                                                        Admit
+                                                    </Link>
+                                                </Button>
+                                            </TableCell>
+                                        )}
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -180,8 +198,16 @@ export default function PatientsIndex({
                 <PatientCreateModal
                     open={modalOpen}
                     onOpenChange={setModalOpen}
-                    initialFullname={noMatch && !looksLikeCode(search_query) ? search_query : ''}
-                    initialPatientCode={noMatch && looksLikeCode(search_query) ? search_query : ''}
+                    initialFullname={
+                        noMatch && !looksLikeCode(search_query)
+                            ? search_query
+                            : ''
+                    }
+                    initialPatientCode={
+                        noMatch && looksLikeCode(search_query)
+                            ? search_query
+                            : ''
+                    }
                 />
             </div>
         </>
