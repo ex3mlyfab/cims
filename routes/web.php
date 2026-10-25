@@ -9,3 +9,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/settings.php';
+require __DIR__.'/admin.php';
+require __DIR__.'/facility.php';
+require __DIR__.'/clinical.php';

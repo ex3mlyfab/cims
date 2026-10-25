@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -39,6 +41,24 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+
+        // CIMA-042: deactivated accounts cannot authenticate again (their
+        // sessions were invalidated at deactivation time; middleware keeps
+        // refusing on later requests). Response stays generic to avoid
+        // leaking account state.
+        Fortify::authenticateUsing(function (Request $request) {
+            $user = User::where('email', $request->{Fortify::username()})->first();
+
+            if (
+                $user !== null
+                && $user->deactivated_at === null
+                && Hash::check($request->password, $user->password)
+            ) {
+                return $user;
+            }
+
+            return null;
+        });
     }
 
     /**

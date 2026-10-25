@@ -18,7 +18,7 @@ Clinical Information Management Application for hospital emergency departments.
 
 ## 1. Objectives & Scope
 
-Manage ED patient flow: registration, clinical encounters, bed allocation/transfer, treatment progress, team coordination, auditable ward/bed management, a privacy-safe public waiting-room display, and an installable PWA.
+Manage ED patient flow: registration, clinical encounters, bed allocation/transfer, treatment progress, team coordination, auditable ward/bed management, privacy-safe public display pages per ward, and an installable PWA.
 
 **In scope:** ED/ward operations for one hospital site (multi-site deferred).
 **Out of scope:** diagnosis/treatment decision support, pharmacy/lab systems integration, billing.
@@ -41,6 +41,8 @@ Manage ED patient flow: registration, clinical encounters, bed allocation/transf
 - `audit_logs`
 - `hospital_branding` (singleton settings row)
 - `management_team_members`
+
+**Admission-record flow (product decision, 2026-10-25):** one management module replaces the separate "patients then encounters" UI journey. Its create form is search-first (fullname / patient id; a modal creates the patient record — fullname, patient id, sex, age — when no match is found), then continues with ward → bed selection, managing team and initial treatment status. The admission record is updatable (ward/bed change = transfer; team and treatment status changes) and carries a discharge button that frees the bed (→ cleaning) while keeping bed occupation history (closed `bed_allocations` rows + append-only `bed_events`). An admissions index lists all records with filtering, pagination and ordering. Public display pages only ever project patients **currently on admission**.
 - Status model: **four distinct axes** — treatment workflow status, encounter status, bed occupancy, disposition (never one column).
 
 ### Bed state machine
@@ -66,7 +68,7 @@ Manage ED patient flow: registration, clinical encounters, bed allocation/transf
 
 ## 6. Public Display
 
-Dedicated unauthenticated route `/display`, server-side projection resource only: masked ID (first 3 chars masked), initials, bed number, sex, age, duration (since current allocation start, client-refreshed tick), treatment status. Polling with connection/stale indicators; disabled via a settings toggle. Privacy rules in ADR-007.
+Per-ward public display, available for every ward **(conceptually created alongside the ward — a link/URL is surfaced when a ward is created)**: a dedicated unauthenticated, full-screen route `/display/{ward}` rendering only a server-side projection table of that ward's **occupied beds** with the columns: masked patient ID (first 3 characters replaced), patient initials, bed number, sex, age, duration (since current allocation start, client-refreshed tick), patient treatment status, managing team, bed occupancy status. The displayed values are entered and maintained through the allocation workflow (Phase 6) and the treatment-status workflow (Phase 5) — never edited directly on the public page. Polling with connection/stale indicators; disabled via an administrative display toggle (`display.manage`). Privacy rules in ADR-007.
 
 ## 7. PWA
 
@@ -93,8 +95,8 @@ Migrate local DB from SQLite → MySQL 8 (Phase 1 gate). Production: `.env` secr
 | 2     | Auth hardening + Spatie RBAC + Super Admin                               | Registration/deletion removed; authz enforced |
 | 3     | Branding + theme engine                                                  | Themes work app-wide, a11y checks pass        |
 | 4     | Admin modules (users, roles, perms, mgmt team, wards, beds, bed history) | CRUD + permissions + history verified         |
-| 5     | Patients + encounters + status workflow                                  | Lifecycle validated by tests                  |
-| 6     | Allocation/transfer/discharge                                            | No invalid allocation states possible         |
+| 5     | Patient search/registration, admission record create flow, treatment statuses, admissions index | Admission lifecycle validated by tests        |
+| 6     | Allocation integrity, admission update/transfer, discharge, concurrency | No invalid allocation states possible          |
 | 7     | Public display                                                           | Privacy tests pass                            |
 | 8     | PWA                                                                      | Installable, no sensitive caching             |
 | 9     | QA + deployment                                                          | Release-critical tests pass                   |

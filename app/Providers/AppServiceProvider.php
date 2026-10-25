@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
-use Spatie\Permission\Traits\HasRoles;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,8 +37,7 @@ class AppServiceProvider extends ServiceProvider
     protected function registerSuperAdminGate(): void
     {
         Gate::before(static function ($user) {
-            /** @var User|HasRoles $user */
-            if (method_exists($user, 'hasRole') && $user->hasRole('super admin')) {
+            if ($user instanceof User && $user->hasRole('super admin')) {
                 return true;
             }
 

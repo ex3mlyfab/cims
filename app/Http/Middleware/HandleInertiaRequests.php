@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\HospitalBranding;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,9 +36,21 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $branding = HospitalBranding::resolveForRequest();
+
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => $branding->name ?? config('app.name'),
+            'branding' => [
+                'name' => $branding?->name,
+                'logoUrl' => $branding?->logoUrl(),
+                'defaultPreset' => $branding?->defaultPreset(),
+                'allowedPresets' => $branding?->allowedPresets(),
+            ],
+            'permissions' => collect($request->user()?->getAllPermissions())
+                ->pluck('name')
+                ->values()
+                ->all(),
             'auth' => [
                 'user' => $request->user(),
             ],

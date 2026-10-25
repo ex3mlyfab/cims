@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth';
+import type { HospitalBranding } from '@/types/branding';
 
 declare module 'react' {
     interface InputHTMLAttributes<T> {
@@ -12,6 +13,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            branding: HospitalBranding;
+            permissions: string[];
             [key: string]: unknown;
         };
     }

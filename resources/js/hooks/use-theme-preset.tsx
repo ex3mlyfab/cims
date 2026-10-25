@@ -4,7 +4,7 @@ import { DEFAULT_THEME_PRESET, isThemePresetId, type ThemePresetId } from '@/lib
 export type UseThemePresetReturn = {
     readonly preset: ThemePresetId;
     readonly updatePreset: (preset: ThemePresetId, options?: { persist?: boolean }) => void;
-    readonly resetPreset: () => void;
+    readonly resetPreset: (target?: ThemePresetId) => void;
 };
 
 const listeners = new Set<() => void>();
@@ -37,6 +37,15 @@ export function applyThemePreset(preset: ThemePresetId): void {
     }
 }
 
+/** Read the hospital default preset the blade shell already applied. */
+const getPresetFromShell = (): ThemePresetId => {
+    if (typeof document === 'undefined') return DEFAULT_THEME_PRESET;
+
+    const applied = document.documentElement.getAttribute('data-cima-preset');
+
+    return isThemePresetId(applied) ? applied : DEFAULT_THEME_PRESET;
+};
+
 const getStoredPreset = (): ThemePresetId => {
     if (typeof window === 'undefined') return DEFAULT_THEME_PRESET;
 
@@ -53,11 +62,19 @@ const subscribe = (callback: () => void) => {
 
 const notify = (): void => listeners.forEach((listener) => listener());
 
-/** Initialize the preset on boot (localStorage wins; the cookie mirrors it). */
+/**
+ * Initialize the preset on boot.
+ * ADR-005 precedence: stored user choice wins, then the hospital default
+ * the blade shell already applied to <html>, then the built-in default.
+ */
 export function initializeThemePreset(): void {
     if (typeof window === 'undefined') return;
 
-    currentPreset = getStoredPreset();
+    const stored = localStorage.getItem(PRESET_STORAGE_KEY);
+
+    currentPreset = isThemePresetId(stored)
+        ? stored
+        : getPresetFromShell();
     applyThemePreset(currentPreset);
     setCookie(currentPreset);
 }
@@ -81,11 +98,24 @@ export function useThemePreset(): UseThemePresetReturn {
         notify();
     };
 
-    const resetPreset = (): void => {
-        currentPreset = DEFAULT_THEME_PRESET;
-        applyThemePreset(DEFAULT_THEME_PRESET);
-        localStorage.removeItem(PRESET_STORAGE_KEY);
-        clearCookie();
+    /**
+     * Reset to the hospital default preset (ADR-005). Persisted as an
+     * explicit user choice so the cookie/localStorage stay consistent.
+     */
+    const resetPreset = (target?: ThemePresetId): void => {
+        const hospitalDefault = target && isThemePresetId(target) ? target : DEFAULT_THEME_PRESET;
+
+        currentPreset = hospitalDefault;
+        applyThemePreset(hospitalDefault);
+
+        if (hospitalDefault === DEFAULT_THEME_PRESET) {
+            localStorage.removeItem(PRESET_STORAGE_KEY);
+            clearCookie();
+        } else {
+            localStorage.setItem(PRESET_STORAGE_KEY, hospitalDefault);
+            setCookie(hospitalDefault);
+        }
+
         notify();
     };
 
