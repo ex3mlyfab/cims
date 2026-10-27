@@ -24,8 +24,11 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+        $role = Role::firstOrCreate([
+            'name' => 'super admin',
+            'guard_name' => 'web',
+        ]);
 
-        $role = Role::where('name', 'super admin')->firstOrFail();
         $user->assignRole($role);
     }
 }
