@@ -26,7 +26,7 @@ class BedController extends Controller
         $beds = Bed::query()
             ->with('ward')
             ->get()
-            ->sortBy(static fn (Bed $bed): array => [$bed->ward->name, $bed->number], SORT_NATURAL | SORT_REGULAR)
+            ->sortBy([['ward.name', 'asc'], ['number', 'asc']], SORT_NATURAL)
             ->values()
             ->map(static fn (Bed $bed): array => [
                 'id' => $bed->id,
