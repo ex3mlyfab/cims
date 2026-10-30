@@ -72,20 +72,33 @@ export default function WardDisplay({
                     {/* Light pooling behind the emblem */}
                     <div className="absolute left-1/2 top-1/2 h-[36rem] w-[56rem] max-w-[92%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(56,189,248,0.14),rgba(56,189,248,0.05)_55%,transparent_100%)] animate-[pulse_6s_ease-in-out_infinite]" />
                     {/* Illuminated emblem */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
                         {branding?.logoUrl ? (
-                            <>
-                                <img
-                                    src={branding.logoUrl}
-                                    alt=""
-                                    className="max-h-52 max-w-[55%] object-contain opacity-50 [filter:brightness(0)_invert(1)_drop-shadow(0_0_28px_rgba(103,232,249,0.45))]"
-                                />
-                                <img
-                                    src={branding.logoUrl}
-                                    alt=""
-                                    className="max-h-28 max-w-[55%] object-contain opacity-20 [filter:brightness(0)_invert(1)] [transform:scaleY(-1)] [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.55),transparent_75%)]"
-                                />
-                            </>
+                            <div className="flex flex-col items-center">
+                                {/* Backlit sign panel holding the logo */}
+                                <div className="rounded-2xl bg-slate-100 p-5 shadow-[0_0_70px_rgba(125,211,252,0.35),0_0_140px_rgba(125,211,252,0.2)]">
+                                    <img
+                                        src={branding.logoUrl}
+                                        alt=""
+                                        className="max-h-36 w-auto max-w-[24rem] object-contain"
+                                    />
+                                </div>
+                                {/* Mirrored reflection fading out */}
+                                <div
+                                    aria-hidden
+                                    className="h-24 w-full overflow-hidden opacity-25 [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.45),transparent_85%)]"
+                                >
+                                    <div style={{ transform: 'scaleY(-1)' }}>
+                                        <div className="rounded-2xl bg-slate-100 p-5">
+                                            <img
+                                                src={branding.logoUrl}
+                                                alt=""
+                                                className="max-h-36 w-auto max-w-[24rem] object-contain"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         ) : (
                             <p className="max-w-[70%] text-center text-6xl font-bold uppercase tracking-tight text-slate-100/[0.08] [text-shadow:0_0_50px_rgba(103,232,249,0.30)]">
                                 {branding?.name}
