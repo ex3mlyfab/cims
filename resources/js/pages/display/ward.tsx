@@ -125,8 +125,9 @@ export default function WardDisplay({
                                         <th className="px-4 py-3 font-semibold">Sex</th>
                                         <th className="px-4 py-3 font-semibold">Age</th>
                                         <th className="px-4 py-3 font-semibold">Duration</th>
-                                        <th className="px-4 py-3 font-semibold">Treatment</th>
+                                        
                                         <th className="px-4 py-3 font-semibold">Team</th>
+                                        <th className="px-4 py-3 font-semibold">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -138,8 +139,9 @@ export default function WardDisplay({
                                             <td className="px-4 py-3 text-slate-200">{occupant.sex}</td>
                                             <td className="px-4 py-3 text-slate-200">{occupant.age}</td>
                                             <td className="px-4 py-3 text-slate-200">{occupant.duration}</td>
-                                            <td className="px-4 py-3 text-slate-200">{occupant.treatment_status}</td>
+                                           
                                             <td className="px-4 py-3 text-slate-200">{occupant.team}</td>
+                                             <td className="px-4 py-3 text-slate-200">{occupant.treatment_status}</td>
                                         </tr>
                                     ))}
                                 </tbody>
