@@ -25,11 +25,18 @@ class DatabaseSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
-        $user = User::query()->where('email', 'text@example.com')->first()
-            ?? User::factory()->create([
+        $user = User::query()->firstOrCreate(
+            ['email' => 'text@example.com'],
+            [
                 'name' => 'Test User',
-                'email' => 'text@example.com',
-            ]);
+                'username' => 'test-user',
+            ],
+        );
+
+        if ($user->username !== 'test-user') {
+            $user->username = 'test-user';
+            $user->save();
+        }
 
         $user->assignRole($role);
     }

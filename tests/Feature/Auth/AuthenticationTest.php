@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
@@ -17,6 +18,18 @@ class AuthenticationTest extends TestCase
         $response = $this->get(route('login'));
 
         $response->assertOk();
+    }
+
+    public function test_database_seeder_assigns_a_stable_username_to_the_test_user()
+    {
+        $user = User::factory()->create(['email' => 'text@example.com']);
+
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'username' => 'test-user',
+        ]);
     }
 
     public function test_users_can_authenticate_using_the_login_screen()
