@@ -163,7 +163,7 @@ return [
     'features' => [
         /* Registration removed: CIMA requires administrator-managed users only (docs/adr/ADR-002). */
         Features::resetPasswords(),
-        Features::emailVerification(),
+        // Email verification disabled for this application.
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,
