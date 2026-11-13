@@ -63,10 +63,17 @@ class BrandingTest extends TestCase
         foreach (['hospital administrator', 'super admin'] as $role) {
             $user = $this->userWithRole($role);
 
+            // The heading is client-rendered; assert on the Inertia payload.
             $this->actingAs($user)
                 ->get(route('branding.edit', absolute: false))
                 ->assertOk()
-                ->assertSee('Hospital branding');
+                ->assertInertia(fn ($page) => $page
+                    ->component('settings/branding')
+                    ->has('branding.name')
+                    ->has('branding.logoUrl')
+                    ->has('branding.displayText')
+                    ->has('branding.defaultPreset')
+                    ->has('branding.allowedPresets'));
         }
     }
 

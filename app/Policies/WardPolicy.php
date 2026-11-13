@@ -7,7 +7,9 @@ use App\Models\Ward;
 
 /**
  * CIMA-044: ward authorization (coarse gating lives with the
- * `permission:wards.*` route middleware).
+ * `permission:wards.*` route middleware). Record rules respect the ward
+ * scoping: accounts other than super admin / hospital administrator may
+ * only manage the wards they are assigned to.
  */
 class WardPolicy
 {
@@ -23,11 +25,11 @@ class WardPolicy
 
     public function update(User $user, Ward $ward): bool
     {
-        return $user->can('wards.manage');
+        return $user->can('wards.manage') && $user->canAccessWard($ward->getKey());
     }
 
     public function delete(User $user, Ward $ward): bool
     {
-        return $user->can('wards.manage');
+        return $user->can('wards.manage') && $user->canAccessWard($ward->getKey());
     }
 }

@@ -95,6 +95,7 @@ class BedManagementTest extends TestCase
     {
         $actor = $this->userWithRole('ward manager');
         $ward = $this->ward();
+        $actor->wards()->attach($ward->id);
 
         $this->actingAs($actor)->get(route('beds.index', absolute: false))->assertOk();
         $this->actingAs($actor)->get(route('beds.create', absolute: false))->assertOk();
@@ -122,6 +123,7 @@ class BedManagementTest extends TestCase
     {
         $actor = $this->userWithRole('ward manager');
         $ward = $this->ward();
+        $actor->wards()->attach($ward->id);
 
         $this->actingAs($actor)
             ->post(route('beds.store', absolute: false), [
@@ -175,6 +177,7 @@ class BedManagementTest extends TestCase
     {
         $actor = $this->userWithRole('ward manager');
         $ward = $this->ward();
+        $actor->wards()->attach($ward->id);
 
         $this->actingAs($actor)
             ->post(route('beds.store', absolute: false), [
@@ -191,6 +194,7 @@ class BedManagementTest extends TestCase
     {
         $actor = $this->userWithRole('ward manager');
         $ward = $this->ward(['capacity' => 1]);
+        $actor->wards()->attach($ward->id);
 
         $this->actingAs($actor)
             ->post(route('beds.store', absolute: false), [
@@ -216,6 +220,7 @@ class BedManagementTest extends TestCase
     {
         $actor = $this->userWithRole('ward manager');
         $ward = $this->ward();
+        $actor->wards()->attach($ward->id);
         $bed = Bed::query()->create([
             'ward_id' => $ward->id,
             'number' => 'A-01',

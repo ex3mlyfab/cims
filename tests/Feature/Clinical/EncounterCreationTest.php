@@ -65,6 +65,7 @@ class EncounterCreationTest extends TestCase
         $user->assignRole('nurse');
 
         $ward = $this->ward();
+        $user->wards()->attach($ward->id);
         $bed = Bed::query()->create([
             'ward_id' => $ward->id,
             'number' => 'A-01',
@@ -186,6 +187,8 @@ class EncounterCreationTest extends TestCase
             'status' => 'available',
         ]);
 
+        $user->wards()->sync([$sourceWard->id, $targetWard->id]);
+
         $patient = $this->patient();
         $team = $this->team();
         $status = $this->treatmentStatus();
@@ -242,6 +245,7 @@ class EncounterCreationTest extends TestCase
         $user->assignRole('nurse');
 
         $ward = $this->ward();
+        $user->wards()->attach($ward->id);
         $bed = Bed::query()->create([
             'ward_id' => $ward->id,
             'number' => 'A-01',
@@ -297,6 +301,7 @@ class EncounterCreationTest extends TestCase
         $user->assignRole('nurse');
 
         $ward = $this->ward();
+        $user->wards()->attach($ward->id);
         $bed = Bed::query()->create([
             'ward_id' => $ward->id,
             'number' => 'A-01',

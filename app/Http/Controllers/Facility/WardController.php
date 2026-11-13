@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Facility;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Facility\WardFormRequest;
+use App\Models\User;
 use App\Models\Ward;
 use App\Services\WardService;
 use Illuminate\Http\RedirectResponse;
@@ -13,13 +14,19 @@ use Inertia\Response;
 
 /**
  * CIMA-044: ward CRUD (Facility Management group). Authorization:
- * `permission:wards.*` route middleware + module policy.
+ * `permission:wards.*` route middleware + module policy. Ward scoping:
+ * aside from `super admin`/`hospital administrator`, accounts only see the
+ * wards assigned to them (User::wardIds()).
  */
 class WardController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        /** @var User $actor */
+        $actor = $request->user();
+
         $wards = Ward::query()
+            ->when(! $actor->hasFullWardAccess(), fn ($query) => $query->whereIn('id', $actor->wardIds()))
             ->orderBy('name')
             ->get()
             ->map(static fn (Ward $ward): array => [

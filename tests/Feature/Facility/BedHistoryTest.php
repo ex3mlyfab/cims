@@ -153,7 +153,9 @@ class BedHistoryTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $actor = User::factory()->create();
         $actor->assignRole('ward manager');
-        $bed = $this->bed($this->ward());
+        $ward = $this->ward();
+        $actor->wards()->attach($ward->id);
+        $bed = $this->bed($ward);
 
         $this->actingAs($actor)
             ->put(route('beds.update', ['bed' => $bed->id], absolute: false), [
@@ -193,7 +195,9 @@ class BedHistoryTest extends TestCase
         // The doctor role carries beds.view but not beds.manage.
         $doctor = User::factory()->create();
         $doctor->assignRole('doctor');
-        $bed = $this->bed($this->ward());
+        $ward = $this->ward();
+        $doctor->wards()->attach($ward->id);
+        $bed = $this->bed($ward);
 
         $this->actingAs($doctor)
             ->get(route('beds.show', ['bed' => $bed->id], absolute: false))

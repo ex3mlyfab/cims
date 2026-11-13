@@ -6,10 +6,13 @@ use App\Enums\BedStatus;
 use App\Models\Bed;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * CIMA-045: bed validation (ward assignment, per-ward number, manual status).
- * The bed number is unique per ward, not globally.
+ * The bed number is unique per ward, not globally. Ward scoping: accounts
+ * other than super admin / hospital administrator may only manage beds
+ * inside of the wards they are assigned to.
  */
 class BedFormRequest extends FormRequest
 {
@@ -51,6 +54,28 @@ class BedFormRequest extends FormRequest
             ],
             'status' => ['required', 'string', 'in:'.implode(',', $manualStatuses)],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            /** @var \App\Models\User|null $user */
+            $user = $this->user();
+
+            if ($user === null || $user->hasFullWardAccess()) {
+                return;
+            }
+
+            $bed = $this->route('bed');
+            $wardId = $bed instanceof Bed ? $bed->ward_id : (string) $this->input('ward_id');
+
+            if ($wardId !== '' && ! $user->canAccessWard($wardId)) {
+                $validator->errors()->add(
+                    'ward_id',
+                    __('Beds may only be managed within wards you are assigned to.'),
+                );
+            }
+        });
     }
 
     protected function prepareForValidation(): void

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Facility\BedFormRequest;
 use App\Models\Bed;
 use App\Models\BedEvent;
+use App\Models\User;
 use App\Models\Ward;
 use App\Services\BedService;
 use Illuminate\Http\RedirectResponse;
@@ -21,10 +22,16 @@ use Inertia\Response;
  */
 class BedController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        /** @var User $actor */
+        $actor = $request->user();
+
+        // Ward scoping: non-exempt accounts only see beds inside the wards
+        // they are assigned to.
         $beds = Bed::query()
             ->with('ward')
+            ->when(! $actor->hasFullWardAccess(), fn ($query) => $query->whereIn('ward_id', $actor->wardIds()))
             ->get()
             ->sortBy([['ward.name', 'asc'], ['number', 'asc']], SORT_NATURAL)
             ->values()
@@ -151,14 +158,19 @@ class BedController extends Controller
     }
 
     /**
-     * Ward picker options for the create form. Any bed manager may place a
-     * bed in any existing ward, so this is independent of `wards.view`.
+     * Ward picker options for the create form. Scoped accounts may only
+     * place a bed in one of their assigned wards; everyone else sees all.
      *
      * @return array<int, array{id: string, code: string, name: string}>
      */
     protected function wardOptions(): array
     {
-        return Ward::query()
+        /** @var User|null $actor */
+        $actor = auth()->user();
+
+        /** @var array<int, array{id: string, code: string, name: string}> $options */
+        $options = Ward::query()
+            ->when($actor !== null && ! $actor->hasFullWardAccess(), fn ($query) => $query->whereIn('id', $actor->wardIds()))
             ->orderBy('name')
             ->get()
             ->map(static fn (Ward $ward): array => [
@@ -167,5 +179,7 @@ class BedController extends Controller
                 'name' => $ward->name,
             ])
             ->all();
+
+        return $options;
     }
 }

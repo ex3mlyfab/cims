@@ -14,6 +14,9 @@ class Role extends SpatieRole
 
     public const SUPER_ADMIN = 'super admin';
 
+    /** Role exempt from ward scoping (sees/admits into every ward). */
+    public const HOSPITAL_ADMINISTRATOR = 'hospital administrator';
+
     /**
      * Whether this role is the seeded Super Admin, which must be protected
      * from rename/delete and permission changes (ADR-002).

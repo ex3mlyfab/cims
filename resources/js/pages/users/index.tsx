@@ -48,8 +48,12 @@ export default function UsersIndex({ users }: { users: UserRecord[] }) {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Name</TableHead>
+                                <TableHead>Username</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead className="w-48">Roles</TableHead>
+                                <TableHead className="w-48">
+                                    Wards
+                                </TableHead>
                                 <TableHead className="w-28">Status</TableHead>
                                 <TableHead className="w-56 text-right">
                                     Actions
@@ -61,6 +65,9 @@ export default function UsersIndex({ users }: { users: UserRecord[] }) {
                                 <TableRow key={user.id}>
                                     <TableCell className="max-w-48 truncate font-medium">
                                         {user.name}
+                                    </TableCell>
+                                    <TableCell className="font-mono text-xs">
+                                        {user.username}
                                     </TableCell>
                                     <TableCell className="max-w-56 truncate">
                                         {user.email}
@@ -77,6 +84,28 @@ export default function UsersIndex({ users }: { users: UserRecord[] }) {
                                                 </Badge>
                                             ))}
                                         </div>
+                                    </TableCell>
+                                    <TableCell
+                                        data-test={`user-wards-${user.username}`}
+                                    >
+                                        {user.wards &&
+                                        user.wards.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1">
+                                                {user.wards.map((ward) => (
+                                                    <Badge
+                                                        key={ward}
+                                                        variant="outline"
+                                                        className="text-[10px]"
+                                                    >
+                                                        {ward}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">
+                                                —
+                                            </span>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         {user.deactivated ? (

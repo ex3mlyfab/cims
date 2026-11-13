@@ -68,8 +68,10 @@ class UserManagementTest extends TestCase
         $this->actingAs($nurse)
             ->post(route('users.store', absolute: false), [
                 'name' => 'Sneaky User',
+                'username' => 'sneaky',
                 'email' => 'sneaky@example.com',
                 'roles' => [],
+                'wards' => [],
             ])
             ->assertForbidden();
 
@@ -85,8 +87,10 @@ class UserManagementTest extends TestCase
         $this->actingAs($user)
             ->post(route('users.store', absolute: false), [
                 'name' => 'Amara Okafor',
+                'username' => 'amara',
                 'email' => 'amara@example.com',
                 'roles' => ['nurse'],
+                'wards' => [],
             ])
             ->assertRedirect(route('users.index'));
 
@@ -109,16 +113,30 @@ class UserManagementTest extends TestCase
         $this->actingAs($user)
             ->post(route('users.store', absolute: false), [
                 'name' => 'Duplicate Email',
+                'username' => 'dup-email',
                 'email' => $user->email,
                 'roles' => ['nurse'],
+                'wards' => [],
             ])
             ->assertSessionHasErrors(['email']);
 
         $this->actingAs($user)
             ->post(route('users.store', absolute: false), [
+                'name' => 'Duplicate Username',
+                'username' => $user->username,
+                'email' => 'dup-username@example.com',
+                'roles' => [],
+                'wards' => [],
+            ])
+            ->assertSessionHasErrors(['username']);
+
+        $this->actingAs($user)
+            ->post(route('users.store', absolute: false), [
                 'name' => 'Fake Role',
+                'username' => 'fakerole',
                 'email' => 'fake-role@example.com',
                 'roles' => ['not-a-role'],
+                'wards' => [],
             ])
             ->assertSessionHasErrors(['roles.0']);
 
@@ -126,8 +144,10 @@ class UserManagementTest extends TestCase
         $this->actingAs($user)
             ->post(route('users.store', absolute: false), [
                 'name' => 'Escalation Attempt',
+                'username' => 'escalation',
                 'email' => 'escalation@example.com',
                 'roles' => ['super admin'],
+                'wards' => [],
             ])
             ->assertSessionHasErrors();
 
@@ -143,8 +163,10 @@ class UserManagementTest extends TestCase
         $this->actingAs($actor)
             ->post(route('users.store', absolute: false), [
                 'name' => 'Second Superset',
+                'username' => 'secondsuper',
                 'email' => 'second-super@example.com',
                 'roles' => ['super admin'],
+                'wards' => [],
             ])
             ->assertRedirect(route('users.index'));
 
@@ -162,8 +184,10 @@ class UserManagementTest extends TestCase
         $this->actingAs($actor)
             ->put(route('users.update', ['user' => $target->id], absolute: false), [
                 'name' => 'Amara Okafor',
+                'username' => $target->username,
                 'email' => $target->email,
                 'roles' => ['records officer'],
+                'wards' => [],
             ])
             ->assertRedirect(route('users.index'));
 
@@ -188,8 +212,10 @@ class UserManagementTest extends TestCase
         $this->actingAs($actor)
             ->put(route('users.update', ['user' => $target->id], absolute: false), [
                 'name' => $target->name,
+                'username' => $target->username,
                 'email' => $target->email,
                 'roles' => ['nurse'],
+                'wards' => [],
             ])
             ->assertRedirect()
             ->assertSessionHas('inertia.flash_data', $this->errorToast());
@@ -205,10 +231,12 @@ class UserManagementTest extends TestCase
         $this->actingAs($actor)
             ->put(route('users.update', ['user' => $target->id], absolute: false), [
                 'name' => str_repeat('n', 150),
+                'username' => 'Not Valid!',
                 'email' => 'not-an-email',
                 'roles' => [],
+                'wards' => [],
             ])
-            ->assertSessionHasErrors(['name', 'email']);
+            ->assertSessionHasErrors(['name', 'username', 'email']);
     }
 
     public function test_deactivated_user_loses_access_and_sessions(): void
@@ -256,12 +284,12 @@ class UserManagementTest extends TestCase
         $user->forceFill(['deactivated_at' => now()])->save();
 
         $response = $this->post(route('login.store', absolute: false), [
-            'email' => $user->email,
+            'username' => $user->username,
             'password' => 'password',
         ]);
 
         $this->assertGuest();
-        $response->assertSessionHasErrors(['email']);
+        $response->assertSessionHasErrors(['username']);
     }
 
     public function test_self_deactivation_is_refused(): void
@@ -334,8 +362,10 @@ class UserManagementTest extends TestCase
         $service = app(UserService::class);
         $user = $service->create([
             'name' => 'No Password Yet',
+            'username' => 'nopassword',
             'email' => 'no-password@example.com',
             'roles' => [],
+            'wards' => [],
         ]);
 
         $service->sendPasswordResetLink($user);
@@ -380,8 +410,10 @@ class UserManagementTest extends TestCase
         $service = app(UserService::class);
         $user = $service->create([
             'name' => 'Many Roles',
+            'username' => 'manyroles',
             'email' => 'many-roles@example.com',
             'roles' => $roleNames->take(5)->values()->all(),
+            'wards' => [],
         ]);
 
         $this->assertCount(5, $user->roles);

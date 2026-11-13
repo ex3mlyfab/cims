@@ -30,6 +30,14 @@ class UserFormRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:100'],
+            'username' => [
+                'required',
+                'string',
+                'lowercase',
+                'max:50',
+                'regex:/^[a-z0-9._-]+$/',
+                Rule::unique('users', 'username')->ignore(is_object($user) ? $user->id : null),
+            ],
             'email' => [
                 'required',
                 'string',
@@ -43,6 +51,15 @@ class UserFormRequest extends FormRequest
                 'string',
                 Rule::exists('roles', 'name')->where('guard_name', 'web'),
             ],
+            'wards' => ['present', 'array'],
+            'wards.*' => ['string', Rule::exists('wards', 'id')],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'username.regex' => __('The username may only contain lowercase letters, numbers, dots, dashes and underscores.'),
         ];
     }
 

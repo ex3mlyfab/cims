@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UserFormRequest;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Ward;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -20,7 +21,7 @@ class UserController extends Controller
     public function index(): Response
     {
         $users = User::query()
-            ->with('roles:id,name')
+            ->with('roles:id,name', 'wards:id,name')
             ->orderBy('deactivated_at')
             ->orderBy('name')
             ->get()
@@ -28,8 +29,10 @@ class UserController extends Controller
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
+                    'username' => $user->username,
                     'email' => $user->email,
                     'roles' => $user->roles->pluck('name')->all(),
+                    'wards' => $user->wards->pluck('name')->all(),
                     'deactivated' => $user->isDeactivated(),
                 ];
             });
@@ -41,6 +44,7 @@ class UserController extends Controller
     {
         return Inertia::render('users/create', [
             'roleOptions' => $this->roleOptions(),
+            'wardOptions' => $this->wardOptions(),
         ]);
     }
 
@@ -64,10 +68,13 @@ class UserController extends Controller
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'username' => $user->username,
                 'email' => $user->email,
                 'roles' => $user->roles()->pluck('name')->all(),
+                'wards' => $user->wardIds(),
             ],
             'roleOptions' => $this->roleOptions(),
+            'wardOptions' => $this->wardOptions(),
         ]);
     }
 
@@ -138,6 +145,29 @@ class UserController extends Controller
             ->map(static fn (Role $role): array => [
                 'id' => $role->id,
                 'name' => $role->name,
+            ])
+            ->all();
+
+        return $options;
+    }
+
+    /**
+     * Assignable wards for the form UI (multi-select). Assigning wards scopes
+     * ward visibility and admissions for every role except `super admin` and
+     * `hospital administrator`.
+     *
+     * @return list<array{id: string, code: string, name: string}>
+     */
+    protected function wardOptions(): array
+    {
+        /** @var list<array{id: string, code: string, name: string}> $options */
+        $options = Ward::query()
+            ->orderBy('name')
+            ->get(['id', 'code', 'name'])
+            ->map(static fn (Ward $ward): array => [
+                'id' => $ward->id,
+                'code' => $ward->code,
+                'name' => $ward->name,
             ])
             ->all();
 

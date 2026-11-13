@@ -1,7 +1,7 @@
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
 import UserForm from '@/components/user-form';
 import { create as createUser } from '@/routes/users';
-import type { RoleOption } from '@/types/user';
+import type { RoleOption, WardOption } from '@/types/user';
 
 /**
  * CIMA-042: create user (Administration module). A password-set link is
@@ -9,8 +9,10 @@ import type { RoleOption } from '@/types/user';
  */
 export default function CreateUser({
     roleOptions,
+    wardOptions,
 }: {
     roleOptions: RoleOption[];
+    wardOptions: WardOption[];
 }) {
     return (
         <UserForm
@@ -18,6 +20,7 @@ export default function CreateUser({
             description="Create a staff account and pick the roles it holds"
             action={UserController.store.form()}
             roleOptions={roleOptions}
+            wardOptions={wardOptions}
         />
     );
 }

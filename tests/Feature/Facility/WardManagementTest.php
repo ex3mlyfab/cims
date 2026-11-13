@@ -174,6 +174,7 @@ class WardManagementTest extends TestCase
     {
         $actor = $this->userWithRole('ward manager');
         $ward = Ward::query()->create(['code' => 'ED-OLD', 'name' => 'Old ward', 'capacity' => 6]);
+        $actor->wards()->attach($ward->id);
 
         $this->actingAs($actor)
             ->delete(route('wards.destroy', ['ward' => $ward->id], absolute: false))

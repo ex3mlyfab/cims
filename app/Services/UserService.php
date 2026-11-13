@@ -28,7 +28,7 @@ class UserService
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  shape: {name: string, email: string, roles?: string[]}
+     * @param  array<string, mixed>  $data  shape: {name: string, username: string, email: string, roles?: string[], wards?: string[]}
      */
     public function create(array $data): User
     {
@@ -36,6 +36,7 @@ class UserService
             $user = new User;
             $user->forceFill([
                 'name' => $data['name'],
+                'username' => $data['username'],
                 'email' => $data['email'],
                 // No admin-chosen passwords: the user sets their own via a
                 // single-use password-set link (same mechanism as reset).
@@ -44,14 +45,17 @@ class UserService
             $user->save();
 
             $user->syncRoles($this->roleNames($data));
+            $user->wards()->sync($this->wardIds($data));
 
             $this->auditLogger->record(
                 'user.created',
                 $user,
                 after: [
                     'name' => $user->name,
+                    'username' => $user->username,
                     'email' => $user->email,
                     'roles' => $user->roles()->pluck('name')->all(),
+                    'wards' => $this->wardNamesOf($user),
                 ],
             );
 
@@ -60,7 +64,7 @@ class UserService
     }
 
     /**
-     * @param  array<string, mixed>  $data  shape: {name?: string, email?: string, roles?: string[]}
+     * @param  array<string, mixed>  $data  shape: {name?: string, username?: string, email?: string, roles?: string[]}
      */
     public function update(User $user, array $data): void
     {
@@ -68,8 +72,10 @@ class UserService
             $beforeRoles = $this->roleNamesOf($user);
             $before = [
                 'name' => $user->name,
+                'username' => $user->username,
                 'email' => $user->email,
                 'roles' => $beforeRoles,
+                'wards' => $this->wardNamesOf($user),
             ];
 
             $nextRoles = isset($data['roles'])
@@ -81,17 +87,24 @@ class UserService
                 $user->name = $data['name'];
             }
 
+            if (isset($data['username']) && (string) $data['username'] !== $user->username) {
+                $user->username = $data['username'];
+            }
+
             if (isset($data['email']) && (string) $data['email'] !== $user->email) {
                 $user->email = $data['email'];
             }
 
             $user->save();
             $user->syncRoles($nextRoles);
+            $user->wards()->sync($this->wardIds($data));
 
             $this->auditLogger->record('user.updated', $user, before: $before, after: [
                 'name' => $user->name,
+                'username' => $user->username,
                 'email' => $user->email,
                 'roles' => $user->roles()->pluck('name')->all(),
+                'wards' => $this->wardNamesOf($user),
             ]);
         });
     }
@@ -155,6 +168,23 @@ class UserService
     protected function roleNamesOf(User $user): array
     {
         return array_values(array_map('strval', (array) $user->roles()->pluck('name')->all()));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<string> ward ids the account is assigned to
+     */
+    protected function wardIds(array $data): array
+    {
+        return array_values(array_unique(array_filter((array) ($data['wards'] ?? []))));
+    }
+
+    /**
+     * @return list<string> names of the wards assigned to the account
+     */
+    protected function wardNamesOf(User $user): array
+    {
+        return array_values(array_map('strval', (array) $user->wards()->get()->pluck('name')->all()));
     }
 
     protected function assertActorSafety(User $user): void

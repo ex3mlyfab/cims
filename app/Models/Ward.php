@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -36,5 +37,11 @@ class Ward extends Model
     public function beds(): HasMany
     {
         return $this->hasMany(Bed::class);
+    }
+
+    /** Staff accounts assigned to this ward (see/admit scope restriction). */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'ward_user');
     }
 }

@@ -9,6 +9,7 @@ use App\Models\Encounter;
 use App\Models\Patient;
 use App\Models\Team;
 use App\Models\TreatmentStatus;
+use App\Models\User;
 use App\Models\Ward;
 use App\Services\EncounterService;
 use Illuminate\Http\JsonResponse;
@@ -21,11 +22,20 @@ use Inertia\Response;
 /**
  * CIMA-051: admission record create flow. The patient search step lands here
  * with a selected patient id, then the form chooses ward + bed + team + status.
+ * Ward scoping: accounts other than super admin / hospital administrator only
+ * see (and admit into) wards assigned to them.
  */
 class EncounterController extends Controller
 {
     public function index(Request $request): Response
     {
+        /** @var User $actor */
+        $actor = $request->user();
+
+        $scopedWards = $actor->hasFullWardAccess()
+            ? null
+            : $actor->wardIds();
+
         $query = trim((string) $request->query('q', ''));
         $wardId = $request->query('ward_id');
         $teamId = $request->query('team_id');
@@ -54,6 +64,7 @@ class EncounterController extends Controller
             ->when($statusId !== null && $statusId !== '', fn ($builder) => $builder->where('treatment_status_id', $statusId))
             ->when($from !== null && $from !== '', fn ($builder) => $builder->whereDate('arrived_at', '>=', $from))
             ->when($to !== null && $to !== '', fn ($builder) => $builder->whereDate('arrived_at', '<=', $to))
+            ->when($scopedWards !== null, fn ($builder) => $builder->whereIn('ward_id', $scopedWards))
             ->orderByDesc('arrived_at')
             ->orderByDesc('created_at')
             ->paginate(25)
@@ -114,11 +125,15 @@ class EncounterController extends Controller
                 'to' => $to,
             ],
             'encounters' => $encounterRows,
-            'wards' => Ward::query()->orderBy('code')->get()->map(static fn (Ward $ward): array => [
-                'id' => $ward->id,
-                'code' => $ward->code,
-                'name' => $ward->name,
-            ])->all(),
+            'wards' => Ward::query()
+                ->when($scopedWards !== null, fn ($query) => $query->whereIn('id', $scopedWards))
+                ->orderBy('code')
+                ->get()
+                ->map(static fn (Ward $ward): array => [
+                    'id' => $ward->id,
+                    'code' => $ward->code,
+                    'name' => $ward->name,
+                ])->all(),
             'teams' => Team::query()->orderBy('name')->get()->map(static fn (Team $team): array => [
                 'id' => $team->id,
                 'name' => $team->name,
@@ -138,6 +153,13 @@ class EncounterController extends Controller
 
     public function create(Request $request): Response
     {
+        /** @var User $actor */
+        $actor = $request->user();
+
+        $scopedWards = $actor->hasFullWardAccess()
+            ? null
+            : $actor->wardIds();
+
         $patient = null;
         $selectedPatientId = $request->query('patient_id');
 
@@ -146,6 +168,7 @@ class EncounterController extends Controller
         }
 
         $wards = Ward::query()
+            ->when($scopedWards !== null, fn ($query) => $query->whereIn('id', $scopedWards))
             ->orderBy('code')
             ->get()
             ->map(static fn (Ward $ward): array => [
@@ -176,6 +199,7 @@ class EncounterController extends Controller
         $availableBeds = Bed::query()
             ->with('ward')
             ->where('status', 'available')
+            ->when($scopedWards !== null, fn ($query) => $query->whereIn('ward_id', $scopedWards))
             ->orderBy('ward_id')
             ->orderBy('number')
             ->get()
@@ -236,19 +260,28 @@ class EncounterController extends Controller
         return to_route('patients.index');
     }
 
-    public function edit(Encounter $encounter): Response
+    public function edit(Request $request, Encounter $encounter): Response
     {
         $this->authorize('update', $encounter);
+
+        /** @var User $actor */
+        $actor = $request->user();
+
+        $scopedWards = $actor->hasFullWardAccess()
+            ? null
+            : $actor->wardIds();
 
         $patient = $encounter->patient()->firstOrFail();
         $arrivedAt = $encounter->getRawOriginal('arrived_at');
         $arrivedAt = is_string($arrivedAt) ? $arrivedAt : null;
 
-        $wards = Ward::query()->orderBy('code')->get()->map(static fn (Ward $ward): array => [
-            'id' => $ward->id,
-            'code' => $ward->code,
-            'name' => $ward->name,
-        ]);
+        $wards = Ward::query()
+            ->when($scopedWards !== null, fn ($query) => $query->whereIn('id', $scopedWards))
+            ->orderBy('code')->get()->map(static fn (Ward $ward): array => [
+                'id' => $ward->id,
+                'code' => $ward->code,
+                'name' => $ward->name,
+            ]);
 
         $teams = Team::query()->orderBy('name')->get()->map(static fn (Team $team): array => [
             'id' => $team->id,
@@ -261,7 +294,9 @@ class EncounterController extends Controller
             'slug' => $status->slug,
         ]);
 
-        $availableBeds = Bed::query()->with('ward')->whereIn('status', ['available', 'occupied'])->orderBy('ward_id')->orderBy('number')->get()->map(static fn (Bed $bed): array => [
+        $availableBeds = Bed::query()->with('ward')->whereIn('status', ['available', 'occupied'])
+            ->when($scopedWards !== null, fn ($query) => $query->whereIn('ward_id', $scopedWards))
+            ->orderBy('ward_id')->orderBy('number')->get()->map(static fn (Bed $bed): array => [
             'id' => $bed->id,
             'ward_id' => $bed->ward_id,
             'ward_code' => $bed->ward?->code,

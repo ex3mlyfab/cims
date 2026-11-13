@@ -47,7 +47,10 @@ class FortifyServiceProvider extends ServiceProvider
         // refusing on later requests). Response stays generic to avoid
         // leaking account state.
         Fortify::authenticateUsing(function (Request $request) {
-            $user = User::where('email', $request->{Fortify::username()})->first();
+            // Users log in with their unique username. Username validation
+            // stores lowercase names, so lookups are case-insensitive.
+            $identifier = Str::lower(trim((string) $request->input(Fortify::username(), '')));
+            $user = $identifier === '' ? null : User::where('username', $identifier)->first();
 
             if (
                 $user !== null
