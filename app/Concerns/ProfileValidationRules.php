@@ -32,14 +32,15 @@ trait ProfileValidationRules
     }
 
     /**
-     * Get the validation rules used to validate user emails.
+     * Get the validation rules used to validate user emails. Email addresses
+     * are optional for accounts (usernames are the login identifier).
      *
      * @return array<int, ValidationRule|array<mixed>|string>
      */
     protected function emailRules(?string $userId = null): array
     {
         return [
-            'required',
+            'nullable',
             'string',
             'email',
             'max:255',

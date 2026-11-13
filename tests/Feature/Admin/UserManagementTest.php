@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -104,6 +105,119 @@ class UserManagementTest extends TestCase
             'action' => 'user.created',
             'record_id' => $created->id,
         ]);
+    }
+
+    public function test_administrator_can_create_a_user_with_an_initial_password(): void
+    {
+        $actor = $this->admin();
+
+        $this->actingAs($actor)
+            ->post(route('users.store', absolute: false), [
+                'name' => 'Amara Okafor',
+                'username' => 'amara',
+                'email' => 'amara@example.com',
+                'password' => 'secret-pass-1',
+                'password_confirmation' => 'secret-pass-1',
+                'roles' => ['nurse'],
+                'wards' => [],
+            ])
+            ->assertRedirect(route('users.index'));
+
+        $created = User::query()->where('username', 'amara')->firstOrFail();
+        $this->assertNotNull($created->password);
+        $this->assertTrue(Hash::check('secret-pass-1', $created->password));
+    }
+
+    public function test_create_requires_a_password_when_no_email_is_supplied(): void
+    {
+        $actor = $this->admin();
+
+        $this->actingAs($actor)
+            ->post(route('users.store', absolute: false), [
+                'name' => 'No Contact',
+                'username' => 'no-contact',
+                'email' => null,
+                'roles' => [],
+                'wards' => [],
+            ])
+            ->assertSessionHasErrors(['password']);
+
+        $this->assertDatabaseMissing('users', ['username' => 'no-contact']);
+    }
+
+    public function test_administrator_can_create_a_user_without_an_email_when_a_password_is_set(): void
+    {
+        $actor = $this->admin();
+
+        $this->actingAs($actor)
+            ->post(route('users.store', absolute: false), [
+                'name' => 'No Contact',
+                'username' => 'no-contact',
+                'email' => '',
+                'password' => 'secret-pass-1',
+                'password_confirmation' => 'secret-pass-1',
+                'roles' => [],
+                'wards' => [],
+            ])
+            ->assertRedirect(route('users.index'));
+
+        $created = User::query()->where('username', 'no-contact')->firstOrFail();
+        $this->assertNull($created->email);
+        $this->assertTrue(Hash::check('secret-pass-1', $created->password));
+    }
+
+    public function test_usernames_are_normalised_to_lowercase_and_unique_case_insensitively(): void
+    {
+        $actor = $this->admin();
+
+        $this->actingAs($actor)
+            ->post(route('users.store', absolute: false), [
+                'name' => 'Mixed Case',
+                'username' => 'Amara.Okafor',
+                'email' => 'mixed-case@example.com',
+                'password' => 'secret-pass-1',
+                'password_confirmation' => 'secret-pass-1',
+                'roles' => [],
+                'wards' => [],
+            ])
+            ->assertRedirect(route('users.index'));
+
+        $this->assertDatabaseHas('users', ['username' => 'amara.okafor']);
+
+        $this->actingAs($actor)
+            ->post(route('users.store', absolute: false), [
+                'name' => 'Duplicate Case',
+                'username' => 'AMARA.OKAFOR',
+                'email' => 'duplicate-case@example.com',
+                'password' => 'secret-pass-1',
+                'password_confirmation' => 'secret-pass-1',
+                'roles' => [],
+                'wards' => [],
+            ])
+            ->assertSessionHasErrors(['username']);
+    }
+
+    public function test_administrator_can_change_a_users_password_and_username_case(): void
+    {
+        $actor = $this->admin();
+        $target = User::factory()->create();
+        $originalUsername = $target->username;
+
+        $this->actingAs($actor)
+            ->put(route('users.update', ['user' => $target->id], absolute: false), [
+                'name' => $target->name,
+                'username' => Str::upper($originalUsername),
+                'email' => $target->email,
+                'password' => 'changed-pass-1',
+                'password_confirmation' => 'changed-pass-1',
+                'roles' => [],
+                'wards' => [],
+            ])
+            ->assertRedirect(route('users.index'));
+
+        $target->refresh();
+        $this->assertSame($originalUsername, $target->username);
+        $this->assertTrue(Hash::check('changed-pass-1', $target->password));
     }
 
     public function test_create_validates_fields_and_role_grants(): void

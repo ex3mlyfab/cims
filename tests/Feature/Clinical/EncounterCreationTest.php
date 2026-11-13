@@ -85,7 +85,7 @@ class EncounterCreationTest extends TestCase
                 'treatment_status_id' => $status->id,
                 'notes' => 'Admitted for observation.',
             ])
-            ->assertRedirect(route('patients.index', absolute: false));
+            ->assertRedirect(route('encounters.index', absolute: false));
 
         $encounter = Encounter::query()->sole();
         $this->assertSame($patient->id, $encounter->patient_id);
@@ -214,7 +214,7 @@ class EncounterCreationTest extends TestCase
                 'treatment_status_id' => $status->id,
                 'notes' => 'Transferred to overflow ward.',
             ])
-            ->assertRedirect(route('patients.index', absolute: false));
+            ->assertRedirect(route('encounters.index', absolute: false));
 
         $encounter->refresh();
         $this->assertSame($targetWard->id, $encounter->ward_id);
@@ -270,7 +270,7 @@ class EncounterCreationTest extends TestCase
 
         $this->actingAs($user)
             ->delete(route('encounters.discharge', ['encounter' => $encounter->id], absolute: false))
-            ->assertRedirect(route('patients.index', absolute: false));
+            ->assertRedirect(route('encounters.index', absolute: false));
 
         $encounter->refresh();
         $this->assertNotNull($encounter->discharged_at);

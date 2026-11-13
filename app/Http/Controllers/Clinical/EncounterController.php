@@ -257,7 +257,7 @@ class EncounterController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Admission created.')]);
 
-        return to_route('patients.index');
+        return to_route('encounters.index');
     }
 
     public function edit(Request $request, Encounter $encounter): Response
@@ -297,12 +297,12 @@ class EncounterController extends Controller
         $availableBeds = Bed::query()->with('ward')->whereIn('status', ['available', 'occupied'])
             ->when($scopedWards !== null, fn ($query) => $query->whereIn('ward_id', $scopedWards))
             ->orderBy('ward_id')->orderBy('number')->get()->map(static fn (Bed $bed): array => [
-            'id' => $bed->id,
-            'ward_id' => $bed->ward_id,
-            'ward_code' => $bed->ward?->code,
-            'number' => $bed->number,
-            'label' => $bed->ward?->code.' · '.$bed->number,
-        ]);
+                'id' => $bed->id,
+                'ward_id' => $bed->ward_id,
+                'ward_code' => $bed->ward?->code,
+                'number' => $bed->number,
+                'label' => $bed->ward?->code.' · '.$bed->number,
+            ]);
 
         return Inertia::render('encounters/edit', [
             'encounter' => [
@@ -337,7 +337,7 @@ class EncounterController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Admission updated.')]);
 
-        return to_route('patients.index');
+        return to_route('encounters.index');
     }
 
     public function discharge(Request $request, Encounter $encounter, EncounterService $service): RedirectResponse
@@ -351,6 +351,6 @@ class EncounterController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Patient discharged.')]);
 
-        return to_route('patients.index');
+        return to_route('encounters.index');
     }
 }

@@ -4,8 +4,8 @@ import { create as createUser } from '@/routes/users';
 import type { RoleOption, WardOption } from '@/types/user';
 
 /**
- * CIMA-042: create user (Administration module). A password-set link is
- * emailed automatically; no admin-chosen passwords.
+ * CIMA-042: create user (Administration module). Admins may set an initial
+ * password or leave it blank to email a password-set link (email required).
  */
 export default function CreateUser({
     roleOptions,

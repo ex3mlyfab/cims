@@ -1,5 +1,5 @@
 export type * from './auth';
-export type * from './bed';
+export type { BedEventRecord, BedRecord, BedStatus } from './bed';
 export type * from './branding';
 export type * from './navigation';
 export type * from './role';

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Ward;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -52,10 +53,16 @@ class UserController extends Controller
     {
         $this->authorize('create', User::class);
 
-        $user = $service->create($request->validated());
-        $service->sendPasswordResetLink($user);
+        $data = $request->validated();
+        $user = $service->create($data);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('User created and a password-set link was sent to their email.')]);
+        if (blank($data['password'] ?? null)) {
+            $service->sendPasswordResetLink($user);
+
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('User created and a password-set link was sent to their email.')]);
+        } else {
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('User created.')]);
+        }
 
         return to_route('users.index');
     }
@@ -115,9 +122,13 @@ class UserController extends Controller
     {
         $this->authorize('resetPassword', $user);
 
-        $service->sendPasswordResetLink($user);
+        $status = $service->sendPasswordResetLink($user);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('A password-reset link was sent to their email.')]);
+        if ($status === Password::RESET_LINK_SENT) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('A password-reset link was sent to their email.')]);
+        } else {
+            Inertia::flash('toast', ['type' => 'error', 'message' => __($status)]);
+        }
 
         return to_route('users.index');
     }

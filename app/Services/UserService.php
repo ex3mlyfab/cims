@@ -28,7 +28,7 @@ class UserService
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  shape: {name: string, username: string, email: string, roles?: string[], wards?: string[]}
+     * @param  array<string, mixed>  $data  shape: {name: string, username: string, email?: string|null, password?: string, roles?: string[], wards?: string[]}
      */
     public function create(array $data): User
     {
@@ -37,10 +37,11 @@ class UserService
             $user->forceFill([
                 'name' => $data['name'],
                 'username' => $data['username'],
-                'email' => $data['email'],
-                // No admin-chosen passwords: the user sets their own via a
-                // single-use password-set link (same mechanism as reset).
-                'password' => null,
+                'email' => $data['email'] ?? null,
+                // Admins may set an initial password. When they do not, the
+                // user picks one via a single-use password-set link (email
+                // required, enforced by validation).
+                'password' => filled($data['password'] ?? null) ? $data['password'] : null,
             ]);
             $user->save();
 
@@ -64,7 +65,7 @@ class UserService
     }
 
     /**
-     * @param  array<string, mixed>  $data  shape: {name?: string, username?: string, email?: string, roles?: string[]}
+     * @param  array<string, mixed>  $data  shape: {name?: string, username?: string, email?: string|null, password?: string, roles?: string[]}
      */
     public function update(User $user, array $data): void
     {
@@ -91,8 +92,17 @@ class UserService
                 $user->username = $data['username'];
             }
 
-            if (isset($data['email']) && (string) $data['email'] !== $user->email) {
-                $user->email = $data['email'];
+            if (array_key_exists('email', $data)) {
+                $nextEmail = filled($data['email']) ? (string) $data['email'] : null;
+
+                if ($nextEmail !== $user->email) {
+                    $user->email = $nextEmail;
+                }
+            }
+
+            // A blank password on edit keeps the existing one.
+            if (filled($data['password'] ?? null)) {
+                $user->password = $data['password'];
             }
 
             $user->save();
@@ -141,11 +151,15 @@ class UserService
     }
 
     /**
-     * Admin never learns or sets the password; a single-use signed link
-     * lets the user choose their own.
+     * Sends a single-use link so users without an admin-set password can
+     * choose their own. Accounts without an email address cannot receive it.
      */
     public function sendPasswordResetLink(User $user): string
     {
+        if (blank($user->email)) {
+            return Password::INVALID_USER;
+        }
+
         $status = Password::sendResetLink(['email' => $user->email]);
 
         $this->auditLogger->record('user.password_reset_requested', $user);

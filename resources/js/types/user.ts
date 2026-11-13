@@ -3,7 +3,7 @@ export type UserRecord = {
     id: string;
     name: string;
     username: string;
-    email: string;
+    email: string | null;
     roles: string[];
     wards?: string[];
     deactivated: boolean;

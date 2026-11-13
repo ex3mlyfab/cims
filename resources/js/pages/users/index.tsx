@@ -51,9 +51,7 @@ export default function UsersIndex({ users }: { users: UserRecord[] }) {
                                 <TableHead>Username</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead className="w-48">Roles</TableHead>
-                                <TableHead className="w-48">
-                                    Wards
-                                </TableHead>
+                                <TableHead className="w-48">Wards</TableHead>
                                 <TableHead className="w-28">Status</TableHead>
                                 <TableHead className="w-56 text-right">
                                     Actions
@@ -70,7 +68,11 @@ export default function UsersIndex({ users }: { users: UserRecord[] }) {
                                         {user.username}
                                     </TableCell>
                                     <TableCell className="max-w-56 truncate">
-                                        {user.email}
+                                        {user.email ?? (
+                                            <span className="text-xs text-muted-foreground">
+                                                —
+                                            </span>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap gap-1">
@@ -88,8 +90,7 @@ export default function UsersIndex({ users }: { users: UserRecord[] }) {
                                     <TableCell
                                         data-test={`user-wards-${user.username}`}
                                     >
-                                        {user.wards &&
-                                        user.wards.length > 0 ? (
+                                        {user.wards && user.wards.length > 0 ? (
                                             <div className="flex flex-wrap gap-1">
                                                 {user.wards.map((ward) => (
                                                     <Badge
@@ -135,35 +136,36 @@ export default function UsersIndex({ users }: { users: UserRecord[] }) {
                                                 >
                                                     <Link
                                                         href={editUser(user.id)}
-                                                        data-test={`edit-user-${user.email}`}
+                                                        data-test={`edit-user-${user.username}`}
                                                     >
                                                         Edit
                                                     </Link>
                                                 </Button>
                                             )}
-                                            {can.resetPassword && (
-                                                <Form
-                                                    {...UserController.sendResetLink.form(
-                                                        { user: user.id },
-                                                    )}
-                                                    options={{
-                                                        preserveScroll: true,
-                                                    }}
-                                                    data-test={`reset-user-${user.email}`}
-                                                >
-                                                    {({ processing }) => (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            disabled={
-                                                                processing
-                                                            }
-                                                        >
-                                                            Reset link
-                                                        </Button>
-                                                    )}
-                                                </Form>
-                                            )}
+                                            {can.resetPassword &&
+                                                user.email && (
+                                                    <Form
+                                                        {...UserController.sendResetLink.form(
+                                                            { user: user.id },
+                                                        )}
+                                                        options={{
+                                                            preserveScroll: true,
+                                                        }}
+                                                        data-test={`reset-user-${user.username}`}
+                                                    >
+                                                        {({ processing }) => (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                disabled={
+                                                                    processing
+                                                                }
+                                                            >
+                                                                Reset link
+                                                            </Button>
+                                                        )}
+                                                    </Form>
+                                                )}
                                             {can.deactivate &&
                                                 (user.deactivated ? (
                                                     <Form
@@ -171,10 +173,9 @@ export default function UsersIndex({ users }: { users: UserRecord[] }) {
                                                             { user: user.id },
                                                         )}
                                                         options={{
-                                                            preserveScroll:
-                                                                true,
+                                                            preserveScroll: true,
                                                         }}
-                                                        data-test={`reactivate-user-${user.email}`}
+                                                        data-test={`reactivate-user-${user.username}`}
                                                     >
                                                         {({ processing }) => (
                                                             <Button
@@ -194,10 +195,9 @@ export default function UsersIndex({ users }: { users: UserRecord[] }) {
                                                             { user: user.id },
                                                         )}
                                                         options={{
-                                                            preserveScroll:
-                                                                true,
+                                                            preserveScroll: true,
                                                         }}
-                                                        data-test={`deactivate-user-${user.email}`}
+                                                        data-test={`deactivate-user-${user.username}`}
                                                     >
                                                         {({ processing }) => (
                                                             <Button
@@ -233,5 +233,3 @@ UsersIndex.layout = {
         },
     ],
 };
-
-

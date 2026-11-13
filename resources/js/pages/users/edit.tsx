@@ -4,9 +4,9 @@ import { index } from '@/routes/users';
 import type { RoleOption, WardOption } from '@/types/user';
 
 /**
- * CIMA-042: edit user (Administration module). Only name/username/email/
- * roles/ward assignments are editable here — passwords flow through the
- * reset-link/broker.
+ * CIMA-042: edit user (Administration module). Name, username, email, roles
+ * and ward assignments are editable here, along with an optional new
+ * password. Leaving the password blank keeps the existing one.
  */
 export default function EditUser({
     user,
@@ -17,7 +17,7 @@ export default function EditUser({
         id: string;
         name: string;
         username: string;
-        email: string;
+        email: string | null;
         roles: string[];
         wards: string[];
     };

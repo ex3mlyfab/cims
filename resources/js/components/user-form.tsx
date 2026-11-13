@@ -1,6 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,7 +30,7 @@ export default function UserForm({
     user?: {
         name: string;
         username: string;
-        email: string;
+        email: string | null;
         roles: string[];
         wards: string[];
     };
@@ -85,9 +86,17 @@ export default function UserForm({
                                     required
                                     maxLength={50}
                                     placeholder="e.g. a.okafor"
-                                    pattern="[a-z0-9._\-]+"
+                                    pattern="[A-Za-z0-9._\-]+"
+                                    autoComplete="username"
+                                    autoCapitalize="none"
+                                    spellCheck={false}
                                     data-test="user-username"
                                 />
+
+                                <p className="text-xs text-muted-foreground">
+                                    Case-insensitive. Letters, numbers, dots,
+                                    dashes and underscores; stored in lowercase.
+                                </p>
 
                                 <InputError
                                     className="mt-2"
@@ -96,7 +105,12 @@ export default function UserForm({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">
+                                    Email address{' '}
+                                    <span className="text-xs font-normal text-muted-foreground">
+                                        (optional)
+                                    </span>
+                                </Label>
 
                                 <Input
                                     id="email"
@@ -104,7 +118,6 @@ export default function UserForm({
                                     className="mt-1 block"
                                     defaultValue={user?.email ?? ''}
                                     name="email"
-                                    required
                                     maxLength={255}
                                     placeholder="staff@hospital.example"
                                     data-test="user-email"
@@ -118,6 +131,58 @@ export default function UserForm({
 
                             <Separator />
 
+                            <div className="grid gap-2">
+                                <Label htmlFor="password">
+                                    {user ? 'New password' : 'Password'}
+                                </Label>
+
+                                <PasswordInput
+                                    id="password"
+                                    className="mt-1 block"
+                                    name="password"
+                                    autoComplete="new-password"
+                                    placeholder={
+                                        user
+                                            ? 'Leave blank to keep the current password'
+                                            : 'Set an initial password'
+                                    }
+                                    data-test="user-password"
+                                />
+
+                                <p className="text-xs text-muted-foreground">
+                                    {user
+                                        ? 'Leave blank to keep the current password.'
+                                        : 'Leave blank to email a password-set link instead — an email address is then required.'}
+                                </p>
+
+                                <InputError
+                                    className="mt-2"
+                                    message={errors.password}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="password_confirmation">
+                                    Confirm password
+                                </Label>
+
+                                <PasswordInput
+                                    id="password_confirmation"
+                                    className="mt-1 block"
+                                    name="password_confirmation"
+                                    autoComplete="new-password"
+                                    placeholder="Repeat the password"
+                                    data-test="user-password-confirmation"
+                                />
+
+                                <InputError
+                                    className="mt-2"
+                                    message={errors.password_confirmation}
+                                />
+                            </div>
+
+                            <Separator />
+
                             <div className="space-y-3">
                                 <div>
                                     <Label>Roles</Label>
@@ -125,7 +190,7 @@ export default function UserForm({
                                     <p className="text-xs text-muted-foreground">
                                         {user
                                             ? 'The user holds every checked role.'
-                                            : 'The user receives a link to set their own password after creation.'}
+                                            : 'A password-set link is emailed when no password is entered.'}
                                     </p>
                                 </div>
 
@@ -156,9 +221,7 @@ export default function UserForm({
 
                                 <InputError
                                     className="mt-2"
-                                    message={
-                                        errors['roles.0'] ?? errors.roles
-                                    }
+                                    message={errors['roles.0'] ?? errors.roles}
                                 />
                             </div>
 
@@ -218,9 +281,7 @@ export default function UserForm({
 
                                 <InputError
                                     className="mt-2"
-                                    message={
-                                        errors['wards.0'] ?? errors.wards
-                                    }
+                                    message={errors['wards.0'] ?? errors.wards}
                                 />
                             </div>
 
