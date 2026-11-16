@@ -9,6 +9,9 @@ namespace App\Enums;
  * Bed state machine (docs/IMPLEMENTATION_PLAN.md §3):
  *   available → occupied → cleaning → available | out_of_service.
  *
+ * Discharge is the exception: it closes the allocation and returns the bed
+ * straight to `available` (see EncounterService::discharge).
+ *
  * `occupied` is reserved for the allocation workflow (CIMA-060); bed
  * management may only move beds between the manual states (AVAILABLE,
  * CLEANING, OUT_OF_SERVICE) and may not enter or leave OCCUPIED directly.

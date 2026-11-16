@@ -112,7 +112,7 @@ export default function EditEncounter({
                 <div className="flex items-center justify-between gap-4">
                     <div>
                         <p className="font-medium text-destructive">Discharge patient</p>
-                        <p className="text-sm text-muted-foreground">Closes the active bed allocation and marks the admission as complete.</p>
+                        <p className="text-sm text-muted-foreground">Closes the active bed allocation, returns the bed to available and marks the admission as complete.</p>
                     </div>
                     <button type="submit" className="rounded-md bg-destructive px-4 py-2 text-destructive-foreground">
                         Discharge

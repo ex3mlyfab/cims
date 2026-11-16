@@ -151,6 +151,7 @@ class EncounterService
                     'reason' => 'discharge',
                     'notes' => $data['notes'] ?? $encounter->notes,
                     'ended_at' => $data['discharged_at'] ?? now(),
+                    'bed_status' => BedStatus::Available,
                 ]);
             }
 

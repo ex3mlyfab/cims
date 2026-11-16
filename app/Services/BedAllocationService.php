@@ -92,7 +92,11 @@ class BedAllocationService
             $lockedAllocation->save();
 
             $bed = Bed::query()->whereKey($lockedAllocation->bed_id)->lockForUpdate()->firstOrFail();
-            $bed->status = BedStatus::Cleaning;
+
+            // Discharge releases the bed straight back to service; other close
+            // paths (e.g. transfer) hand it to cleaning for turn-over.
+            $releaseStatus = $data['bed_status'] ?? BedStatus::Cleaning;
+            $bed->status = is_string($releaseStatus) ? BedStatus::from($releaseStatus) : $releaseStatus;
             $bed->save();
 
             $this->auditLogger->record('bed.allocation.closed', $lockedAllocation, before: $before, after: $this->summary($lockedAllocation));

@@ -276,7 +276,7 @@ class EncounterCreationTest extends TestCase
         $this->assertNotNull($encounter->discharged_at);
 
         $bed->refresh();
-        $this->assertSame(BedStatus::Cleaning, $bed->status);
+        $this->assertSame(BedStatus::Available, $bed->status);
 
         $this->assertTrue(
             $encounter->patient()->exists() &&
