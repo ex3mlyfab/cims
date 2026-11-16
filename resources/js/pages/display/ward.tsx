@@ -33,6 +33,9 @@ export default function WardDisplay({
     const branding = usePage().props.branding as Branding;
 
     useEffect(() => {
+        const largeScreen = window.matchMedia('(min-width: 1280px)');
+        let interval: number | undefined;
+
         const refresh = () => {
             setIsRefreshing(true);
             setIsStale(false);
@@ -53,16 +56,31 @@ export default function WardDisplay({
             });
         };
 
-        const interval = window.setInterval(refresh, 30000);
+        const updatePolling = () => {
+            if (largeScreen.matches && interval === undefined) {
+                interval = window.setInterval(refresh, 30000);
+            } else if (!largeScreen.matches && interval !== undefined) {
+                window.clearInterval(interval);
+                interval = undefined;
+            }
+        };
 
-        return () => window.clearInterval(interval);
+        updatePolling();
+        largeScreen.addEventListener('change', updatePolling);
+
+        return () => {
+            largeScreen.removeEventListener('change', updatePolling);
+            if (interval !== undefined) {
+                window.clearInterval(interval);
+            }
+        };
     }, []);
 
     return (
         <>
             <Head title={`${ward.code} display`} />
 
-            <div className="relative min-h-screen bg-slate-950 p-6 text-slate-50">
+            <div className="relative hidden min-h-screen bg-slate-950 p-6 text-slate-50 xl:block">
                 <div
                     aria-hidden
                     className="pointer-events-none absolute inset-3 top-28 bottom-6 z-0 md:inset-x-6 md:top-32 md:bottom-8"
@@ -161,6 +179,21 @@ export default function WardDisplay({
                             </table>
                         </div>
                     )}
+                </div>
+            </div>
+
+            <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-slate-50 xl:hidden">
+                <div className="max-w-md text-center">
+                    <p className="text-xs font-semibold tracking-[0.2em] text-cyan-300 uppercase">
+                        Ward display
+                    </p>
+                    <h1 className="mt-3 text-2xl font-bold">
+                        Large screen required
+                    </h1>
+                    <p className="mt-3 text-slate-300">
+                        This ward display is available on screens at least 1280
+                        pixels wide.
+                    </p>
                 </div>
             </div>
         </>
