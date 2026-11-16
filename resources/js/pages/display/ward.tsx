@@ -7,7 +7,7 @@ type Occupant = {
     initials: string;
     bed_number: string;
     sex: string;
-    age: number;
+    age: number | null;
     duration: string;
     treatment_status: string;
     team: string;
@@ -150,7 +150,7 @@ export default function WardDisplay({
                                             <td className="px-4 py-3 text-slate-100">{occupant.initials}</td>
                                             <td className="px-4 py-3 text-slate-200">{occupant.bed_number}</td>
                                             <td className="px-4 py-3 text-slate-200">{occupant.sex}</td>
-                                            <td className="px-4 py-3 text-slate-200">{occupant.age}</td>
+                                            <td className="px-4 py-3 text-slate-200">{occupant.age ?? '—'}</td>
                                             <td className="px-4 py-3 text-slate-200">{occupant.duration}</td>
                                            
                                             <td className="px-4 py-3 text-slate-200">{occupant.team}</td>

@@ -10,7 +10,7 @@ export type PatientRecord = {
     fullname: string;
     sex: SexValue;
     sex_label: string;
-    age: number;
+    age: number | null;
 };
 
 export const SEX_LABELS: Record<SexValue, string> = {

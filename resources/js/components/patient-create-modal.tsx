@@ -19,14 +19,14 @@ export type PatientOption = {
     patient_code: string;
     fullname: string;
     sex: string;
-    age: number;
+    age: number | null;
 };
 
 /**
  * CIMA-050: the inline "create patient" modal of the search-first module.
- * Fields are exactly fullname, patient id, sex and age — the "no match"
- * path of the admission-record flow. The attribute classes mirror the
- * other module forms (status selects use native elements).
+ * Fields are exactly fullname, patient id, sex and an optional age — the
+ * "no match" path of the admission-record flow. The attribute classes mirror
+ * the other module forms (status selects use native elements).
  */
 export default function PatientCreateModal({
     open,
@@ -200,15 +200,15 @@ export default function PatientCreateModal({
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="age">Age</Label>
+                            <Label htmlFor="age">Age (optional)</Label>
                             <Input
                                 id="age"
                                 name="age"
                                 type="number"
-                                required
                                 min={0}
                                 max={130}
                                 step={1}
+                                placeholder="Not known"
                                 value={form.data.age}
                                 onChange={(event) =>
                                     form.setData('age', event.target.value)

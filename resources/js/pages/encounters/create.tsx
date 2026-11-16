@@ -55,7 +55,7 @@ export default function CreateEncounter({
         patient_id: initialPatient?.id ?? '',
         ward_id: '',
         bed_id: '',
-        team_id: '',
+        team_ids: [] as string[],
         treatment_status_id: '',
         notes: '',
     });
@@ -67,6 +67,16 @@ export default function CreateEncounter({
         setPatient(selectedPatient);
         form.setData('patient_id', selectedPatient.id);
         form.clearErrors('patient_id');
+    };
+
+    const toggleTeam = (teamId: string) => {
+        form.setData(
+            'team_ids',
+            form.data.team_ids.includes(teamId)
+                ? form.data.team_ids.filter((id) => id !== teamId)
+                : [...form.data.team_ids, teamId],
+        );
+        form.clearErrors('team_ids');
     };
 
     const submitAdmission = (event: React.FormEvent<HTMLFormElement>) => {
@@ -144,8 +154,8 @@ export default function CreateEncounter({
             <div className="rounded-xl border bg-card p-6 shadow-sm">
                 <h1 className="text-2xl font-semibold">Create admission</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                    Select the patient, ward, bed, managing team and initial
-                    treatment status.
+                    Select the patient, ward, bed and initial treatment status.
+                    Managing teams are optional.
                 </p>
             </div>
 
@@ -177,7 +187,8 @@ export default function CreateEncounter({
                                         </span>
                                         <span className="block truncate text-xs text-muted-foreground">
                                             {patient.patient_code} ·{' '}
-                                            {patient.sex} · {patient.age}
+                                            {patient.sex} ·{' '}
+                                            {patient.age ?? 'Age unknown'}
                                         </span>
                                     </span>
                                 ) : (
@@ -246,7 +257,8 @@ export default function CreateEncounter({
                                                                 option.patient_code
                                                             }{' '}
                                                             · {option.sex} ·{' '}
-                                                            {option.age}
+                                                            {option.age ??
+                                                                'Age unknown'}
                                                         </span>
                                                     </span>
                                                 </CommandItem>
@@ -348,25 +360,40 @@ export default function CreateEncounter({
 
                 <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                        <label className="mb-2 block text-sm font-medium">
-                            Managing team
-                        </label>
-                        <select
-                            value={form.data.team_id}
-                            onChange={(event) =>
-                                form.setData('team_id', event.target.value)
-                            }
-                            aria-invalid={!!form.errors.team_id}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2"
-                        >
-                            <option value="">Select team</option>
-                            {teams.map((team) => (
-                                <option key={team.id} value={team.id}>
-                                    {team.name}
-                                </option>
-                            ))}
-                        </select>
-                        <InputError message={form.errors.team_id} />
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                            <label className="block text-sm font-medium">
+                                Managing teams
+                            </label>
+                            <span className="text-xs text-muted-foreground">
+                                Optional · select all that apply
+                            </span>
+                        </div>
+                        <div className="max-h-44 space-y-1 overflow-y-auto rounded-md border border-input bg-background p-2">
+                            {teams.length === 0 ? (
+                                <p className="px-2 py-1 text-sm text-muted-foreground">
+                                    No teams configured.
+                                </p>
+                            ) : (
+                                teams.map((team) => (
+                                    <label
+                                        key={team.id}
+                                        className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={form.data.team_ids.includes(
+                                                team.id,
+                                            )}
+                                            onChange={() => toggleTeam(team.id)}
+                                            className="size-4 rounded border-input accent-primary"
+                                            data-test="admission-team"
+                                        />
+                                        <span>{team.name}</span>
+                                    </label>
+                                ))
+                            )}
+                        </div>
+                        <InputError message={form.errors.team_ids} />
                     </div>
 
                     <div>

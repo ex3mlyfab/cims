@@ -22,7 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string $patient_code
  * @property string $fullname
  * @property Sex $sex
- * @property int $age
+ * @property int|null $age
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */

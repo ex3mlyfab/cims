@@ -8,7 +8,6 @@ use App\Models\Bed;
 use App\Models\BedAllocation;
 use App\Models\Encounter;
 use App\Models\Patient;
-use App\Models\Team;
 use App\Models\TreatmentStatus;
 use App\Models\User;
 use App\Models\Ward;
@@ -39,7 +38,7 @@ class EncounterService
                 ->whereKey($data['bed_id'])
                 ->firstOrFail();
 
-            $team = Team::query()->whereKey($data['team_id'])->firstOrFail();
+            $teamIds = $this->teamIds($data);
             $treatmentStatus = TreatmentStatus::query()->whereKey($data['treatment_status_id'])->firstOrFail();
 
             if (! $treatmentStatus->is_active) {
@@ -59,11 +58,11 @@ class EncounterService
             $encounter->patient_id = $patient->id;
             $encounter->ward_id = $ward->id;
             $encounter->bed_id = $bed->id;
-            $encounter->team_id = $team->id;
             $encounter->treatment_status_id = $treatmentStatus->id;
             $encounter->arrived_at = $data['arrived_at'] ?? now();
             $encounter->notes = $data['notes'] ?? null;
             $encounter->save();
+            $encounter->teams()->sync($teamIds);
 
             $this->auditLogger->record('encounter.created', $encounter, after: $this->summary($encounter));
 
@@ -85,7 +84,6 @@ class EncounterService
                 ->where('ward_id', $ward->id)
                 ->whereKey($data['bed_id'] ?? $encounter->bed_id)
                 ->firstOrFail();
-            $team = Team::query()->whereKey($data['team_id'] ?? $encounter->team_id)->firstOrFail();
             $treatmentStatus = TreatmentStatus::query()->whereKey($data['treatment_status_id'] ?? $encounter->treatment_status_id)->firstOrFail();
 
             if (! $treatmentStatus->is_active) {
@@ -118,11 +116,14 @@ class EncounterService
 
             $encounter->ward_id = $ward->id;
             $encounter->bed_id = $bed->id;
-            $encounter->team_id = $team->id;
             $encounter->treatment_status_id = $treatmentStatus->id;
             $encounter->arrived_at = $data['arrived_at'] ?? $encounter->arrived_at;
             $encounter->notes = array_key_exists('notes', $data) ? $data['notes'] : $encounter->notes;
             $encounter->save();
+
+            if (array_key_exists('team_ids', $data)) {
+                $encounter->teams()->sync($this->teamIds($data));
+            }
 
             $this->auditLogger->record('encounter.updated', $encounter, before: $before, after: $this->summary($encounter));
 
@@ -165,6 +166,25 @@ class EncounterService
         });
     }
 
+    /**
+     * Normalise the optional managing-team selection into a list of ids.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<string>
+     */
+    protected function teamIds(array $data): array
+    {
+        $ids = array_map(
+            static fn ($id): string => (string) $id,
+            (array) ($data['team_ids'] ?? []),
+        );
+
+        return array_values(array_unique(array_filter(
+            $ids,
+            static fn (string $id): bool => $id !== '',
+        )));
+    }
+
     /** @return array<string, mixed> */
     protected function summary(Encounter $encounter): array
     {
@@ -172,7 +192,7 @@ class EncounterService
             'patient_id' => $encounter->patient_id,
             'ward_id' => $encounter->ward_id,
             'bed_id' => $encounter->bed_id,
-            'team_id' => $encounter->team_id,
+            'team_ids' => $encounter->teams()->orderBy('teams.id')->pluck('teams.id')->all(),
             'treatment_status_id' => $encounter->treatment_status_id,
             'arrived_at' => $encounter->arrived_at ? Carbon::parse((string) $encounter->arrived_at)->toDateTimeString() : null,
             'discharged_at' => $encounter->discharged_at ? Carbon::parse((string) $encounter->discharged_at)->toDateTimeString() : null,

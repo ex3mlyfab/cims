@@ -44,7 +44,7 @@ class EncounterController extends Controller
         $to = $request->query('to');
 
         $encounters = Encounter::query()
-            ->with(['patient', 'ward', 'team', 'treatmentStatus'])
+            ->with(['patient', 'ward', 'teams', 'treatmentStatus'])
             ->when($query !== '', function ($builder) use ($query) {
                 $term = '%'.$query.'%';
 
@@ -60,7 +60,7 @@ class EncounterController extends Controller
                 });
             })
             ->when($wardId !== null && $wardId !== '', fn ($builder) => $builder->where('ward_id', $wardId))
-            ->when($teamId !== null && $teamId !== '', fn ($builder) => $builder->where('team_id', $teamId))
+            ->when($teamId !== null && $teamId !== '', fn ($builder) => $builder->whereHas('teams', fn ($teamQuery) => $teamQuery->whereKey($teamId)))
             ->when($statusId !== null && $statusId !== '', fn ($builder) => $builder->where('treatment_status_id', $statusId))
             ->when($from !== null && $from !== '', fn ($builder) => $builder->whereDate('arrived_at', '>=', $from))
             ->when($to !== null && $to !== '', fn ($builder) => $builder->whereDate('arrived_at', '<=', $to))
@@ -85,7 +85,7 @@ class EncounterController extends Controller
         $encounterRows = $encounters->getCollection()->map(static function (Encounter $encounter) use ($formatEncounterDate): array {
             $patient = $encounter->patient()->first();
             $ward = $encounter->ward()->first();
-            $team = $encounter->team()->first();
+            $teams = $encounter->teams()->orderBy('teams.name')->get();
             $treatmentStatus = $encounter->treatmentStatus()->first();
 
             return [
@@ -100,10 +100,10 @@ class EncounterController extends Controller
                     'code' => $ward?->code,
                     'name' => $ward?->name,
                 ],
-                'team' => [
-                    'id' => $team?->id,
-                    'name' => $team?->name,
-                ],
+                'teams' => $teams->map(static fn (Team $team): array => [
+                    'id' => $team->id,
+                    'name' => $team->name,
+                ])->all(),
                 'treatment_status' => [
                     'id' => $treatmentStatus?->id,
                     'label' => $treatmentStatus?->label,
@@ -310,7 +310,7 @@ class EncounterController extends Controller
                 'patient_id' => $encounter->patient_id,
                 'ward_id' => $encounter->ward_id,
                 'bed_id' => $encounter->bed_id,
-                'team_id' => $encounter->team_id,
+                'team_ids' => $encounter->teams()->pluck('teams.id')->all(),
                 'treatment_status_id' => $encounter->treatment_status_id,
                 'notes' => $encounter->notes,
                 'arrived_at' => $arrivedAt,

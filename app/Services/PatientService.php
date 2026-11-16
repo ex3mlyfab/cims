@@ -23,7 +23,7 @@ class PatientService
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data  shape: {fullname: string, patient_code: string, sex: string, age: int}
+     * @param  array<string, mixed>  $data  shape: {fullname: string, patient_code: string, sex: string, age?: int|null}
      */
     public function create(User $actor, array $data): Patient
     {
@@ -32,7 +32,7 @@ class PatientService
             $patient->patient_code = (string) $data['patient_code'];
             $patient->fullname = (string) $data['fullname'];
             $patient->sex = Sex::from((string) $data['sex']);
-            $patient->age = (int) $data['age'];
+            $patient->age = isset($data['age']) ? (int) $data['age'] : null;
             $patient->save();
 
             $this->auditLogger->record('patient.created', $patient, after: $this->summary($patient));

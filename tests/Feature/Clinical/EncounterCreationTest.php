@@ -81,7 +81,7 @@ class EncounterCreationTest extends TestCase
                 'patient_id' => $patient->id,
                 'ward_id' => $ward->id,
                 'bed_id' => $bed->id,
-                'team_id' => $team->id,
+                'team_ids' => [$team->id],
                 'treatment_status_id' => $status->id,
                 'notes' => 'Admitted for observation.',
             ])
@@ -91,7 +91,7 @@ class EncounterCreationTest extends TestCase
         $this->assertSame($patient->id, $encounter->patient_id);
         $this->assertSame($ward->id, $encounter->ward_id);
         $this->assertSame($bed->id, $encounter->bed_id);
-        $this->assertSame($team->id, $encounter->team_id);
+        $this->assertTrue($encounter->teams()->whereKey($team->id)->exists());
         $this->assertSame($status->id, $encounter->treatment_status_id);
         $this->assertNotNull($encounter->arrived_at);
         $this->assertNull($encounter->discharged_at);
@@ -108,6 +108,74 @@ class EncounterCreationTest extends TestCase
             'action' => 'encounter.created',
             'record_id' => $encounter->id,
         ]);
+    }
+
+    public function test_admission_accepts_multiple_managing_teams_or_none(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('nurse');
+
+        $ward = $this->ward();
+        $user->wards()->attach($ward->id);
+        $status = $this->treatmentStatus();
+
+        $firstTeam = $this->team();
+        $secondTeam = Team::query()->create([
+            'name' => 'Surgical team',
+            'status' => 'active',
+        ]);
+
+        $firstBed = Bed::query()->create([
+            'ward_id' => $ward->id,
+            'number' => 'A-01',
+            'status' => 'available',
+        ]);
+        $secondBed = Bed::query()->create([
+            'ward_id' => $ward->id,
+            'number' => 'A-02',
+            'status' => 'available',
+        ]);
+
+        $firstPatient = $this->patient();
+        $secondPatient = Patient::query()->create([
+            'patient_code' => 'P-1002',
+            'fullname' => 'Ben Cole',
+            'sex' => Sex::Male,
+            'age' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('encounters.store', absolute: false), [
+                'patient_id' => $firstPatient->id,
+                'ward_id' => $ward->id,
+                'bed_id' => $firstBed->id,
+                'team_ids' => [$firstTeam->id, $secondTeam->id],
+                'treatment_status_id' => $status->id,
+            ])
+            ->assertRedirect(route('encounters.index', absolute: false));
+
+        $firstEncounter = Encounter::query()->where('patient_id', $firstPatient->id)->sole();
+        $this->assertEqualsCanonicalizing(
+            [$firstTeam->id, $secondTeam->id],
+            $firstEncounter->teams()->pluck('teams.id')->all(),
+        );
+
+        // Team selection is optional, and so is the patient's age.
+        $this->actingAs($user)
+            ->post(route('encounters.store', absolute: false), [
+                'patient_id' => $secondPatient->id,
+                'ward_id' => $ward->id,
+                'bed_id' => $secondBed->id,
+                'team_ids' => [],
+                'treatment_status_id' => $status->id,
+            ])
+            ->assertRedirect(route('encounters.index', absolute: false));
+
+        $secondEncounter = Encounter::query()->where('patient_id', $secondPatient->id)->sole();
+        $this->assertCount(0, $secondEncounter->teams);
+        $this->assertNull($secondPatient->fresh()?->age);
     }
 
     public function test_nurse_can_search_patients_for_the_admission_combobox(): void
@@ -146,7 +214,7 @@ class EncounterCreationTest extends TestCase
                 'patient_id' => $patient->id,
                 'ward_id' => '',
                 'bed_id' => '',
-                'team_id' => '',
+                'team_ids' => [],
                 'treatment_status_id' => '',
                 'notes' => 'Observation notes to preserve.',
             ])
@@ -154,7 +222,6 @@ class EncounterCreationTest extends TestCase
             ->assertSessionHasErrors([
                 'ward_id',
                 'bed_id',
-                'team_id',
                 'treatment_status_id',
             ]);
 
@@ -198,7 +265,7 @@ class EncounterCreationTest extends TestCase
                 'patient_id' => $patient->id,
                 'ward_id' => $sourceWard->id,
                 'bed_id' => $sourceBed->id,
-                'team_id' => $team->id,
+                'team_ids' => [$team->id],
                 'treatment_status_id' => $status->id,
                 'notes' => 'Admitted for observation.',
             ]);
@@ -210,7 +277,7 @@ class EncounterCreationTest extends TestCase
                 'patient_id' => $patient->id,
                 'ward_id' => $targetWard->id,
                 'bed_id' => $targetBed->id,
-                'team_id' => $team->id,
+                'team_ids' => [$team->id],
                 'treatment_status_id' => $status->id,
                 'notes' => 'Transferred to overflow ward.',
             ])
@@ -261,7 +328,7 @@ class EncounterCreationTest extends TestCase
                 'patient_id' => $patient->id,
                 'ward_id' => $ward->id,
                 'bed_id' => $bed->id,
-                'team_id' => $team->id,
+                'team_ids' => [$team->id],
                 'treatment_status_id' => $status->id,
                 'notes' => 'Admitted for observation.',
             ]);
@@ -317,7 +384,7 @@ class EncounterCreationTest extends TestCase
                 'patient_id' => $patient->id,
                 'ward_id' => $ward->id,
                 'bed_id' => $bed->id,
-                'team_id' => $team->id,
+                'team_ids' => [$team->id],
                 'treatment_status_id' => $status->id,
                 'notes' => 'Admitted for observation.',
             ]);

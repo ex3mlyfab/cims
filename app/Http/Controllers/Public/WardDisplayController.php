@@ -15,7 +15,7 @@ class WardDisplayController extends Controller
     public function show(Ward $ward): Response
     {
         $occupants = Encounter::query()
-            ->with(['patient', 'bed', 'team', 'treatmentStatus'])
+            ->with(['patient', 'bed', 'teams', 'treatmentStatus'])
             ->where('ward_id', $ward->getKey())
             ->whereNull('discharged_at')
             ->get()
@@ -25,7 +25,7 @@ class WardDisplayController extends Controller
                 $startedAt = $allocation ? $allocation->started_at : ($encounter->arrived_at ?? now());
                 $patient = $encounter->patient;
                 $treatmentStatus = $encounter->treatmentStatus;
-                $team = $encounter->team;
+                $team = $encounter->teams->pluck('name')->join(', ');
 
                 if (! $startedAt instanceof CarbonInterface) {
                     $startedAt = Carbon::parse((string) $startedAt);
@@ -37,10 +37,10 @@ class WardDisplayController extends Controller
                     'initials' => $this->initials((string) ($patient->fullname ?? '')),
                     'bed_number' => $bed ? $bed->number : '',
                     'sex' => $patient->sex->label(),
-                    'age' => (int) ($patient->age ?? 0),
+                    'age' => $patient->age ?? null,
                     'duration' => $this->durationLabel($startedAt),
                     'treatment_status' => $treatmentStatus->label ?? 'Unassigned',
-                    'team' => $team->name ?? 'Unassigned',
+                    'team' => $team !== '' ? $team : 'Unassigned',
                     'occupancy_status' => $bed->status->label(),
                 ];
             })

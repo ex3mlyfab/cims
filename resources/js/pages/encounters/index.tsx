@@ -17,7 +17,7 @@ type AdmissionRecord = {
     id: string;
     patient: { id: string; fullname: string; patient_code: string };
     ward: { id: string; code: string; name: string };
-    team: { id: string; name: string };
+    teams: Array<{ id: string; name: string }>;
     treatment_status: { id: string; label: string };
     arrived_at: string | null;
     discharged_at: string | null;
@@ -175,7 +175,13 @@ export default function EncountersIndex({
                                             <div className="font-medium">{encounter.ward.code}</div>
                                             <div className="text-xs text-muted-foreground">{encounter.ward.name}</div>
                                         </TableCell>
-                                        <TableCell>{encounter.team.name}</TableCell>
+                                        <TableCell>
+                                            {encounter.teams.length > 0
+                                                ? encounter.teams
+                                                      .map((team) => team.name)
+                                                      .join(', ')
+                                                : 'Unassigned'}
+                                        </TableCell>
                                         <TableCell>
                                             <Badge variant={encounter.is_active ? 'default' : 'secondary'}>
                                                 {encounter.treatment_status.label}

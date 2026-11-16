@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * CIMA-050: patient registration validation (fullname, patient code, sex,
- * age) — exactly the fields of the search-first modal in the
+ * optional age) — exactly the fields of the search-first modal in the
  * admission-record flow.
  */
 class PatientFormRequest extends FormRequest
@@ -44,7 +44,7 @@ class PatientFormRequest extends FormRequest
                 Rule::in(Sex::values()),
             ],
             'age' => [
-                'required',
+                'nullable',
                 'integer',
                 'min:0',
                 'max:'.Patient::MAX_AGE,

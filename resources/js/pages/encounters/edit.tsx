@@ -3,7 +3,7 @@ type PatientSummary = {
     patient_code: string;
     fullname: string;
     sex: string;
-    age: number;
+    age: number | null;
 };
 
 export default function EditEncounter({
@@ -19,7 +19,7 @@ export default function EditEncounter({
         patient_id: string;
         ward_id: string;
         bed_id: string;
-        team_id: string;
+        team_ids: string[];
         treatment_status_id: string;
         notes: string | null;
         arrived_at: string | null;
@@ -35,7 +35,7 @@ export default function EditEncounter({
             <div className="rounded-xl border bg-card p-6 shadow-sm">
                 <h1 className="text-2xl font-semibold">Update admission</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                    Adjust the admission ward, bed, team, treatment status or notes while preserving the allocation history.
+                    Adjust the admission ward, bed, managing teams, treatment status or notes while preserving the allocation history.
                 </p>
             </div>
 
@@ -47,7 +47,7 @@ export default function EditEncounter({
                 <div className="rounded-lg border bg-muted/50 p-4">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Patient</p>
                     <p className="mt-2 font-medium">{patient.fullname}</p>
-                    <p className="text-sm text-muted-foreground">{patient.patient_code} · {patient.sex} · {patient.age}</p>
+                    <p className="text-sm text-muted-foreground">{patient.patient_code} · {patient.sex} · {patient.age ?? 'Age unknown'}</p>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -74,13 +74,28 @@ export default function EditEncounter({
 
                 <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                        <label className="mb-2 block text-sm font-medium">Managing team</label>
-                        <select name="team_id" defaultValue={encounter.team_id} className="w-full rounded-md border border-input bg-background px-3 py-2">
-                            <option value="">Select team</option>
-                            {teams.map((team) => (
-                                <option key={team.id} value={team.id}>{team.name}</option>
-                            ))}
-                        </select>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                            <span className="block text-sm font-medium">Managing teams</span>
+                            <span className="text-xs text-muted-foreground">Optional · select all that apply</span>
+                        </div>
+                        <div className="max-h-44 space-y-1 overflow-y-auto rounded-md border border-input bg-background p-2">
+                            {teams.length === 0 ? (
+                                <p className="px-2 py-1 text-sm text-muted-foreground">No teams configured.</p>
+                            ) : (
+                                teams.map((team) => (
+                                    <label key={team.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60">
+                                        <input
+                                            type="checkbox"
+                                            name="team_ids[]"
+                                            value={team.id}
+                                            defaultChecked={encounter.team_ids.includes(team.id)}
+                                            className="size-4 rounded border-input accent-primary"
+                                        />
+                                        <span>{team.name}</span>
+                                    </label>
+                                ))
+                            )}
+                        </div>
                     </div>
 
                     <div>

@@ -4,7 +4,6 @@ namespace App\Http\Requests\Clinical;
 
 use App\Models\Bed;
 use App\Models\Encounter;
-use App\Models\Team;
 use App\Models\Ward;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -12,9 +11,10 @@ use Illuminate\Validation\Validator;
 
 /**
  * CIMA-051: admission create validation. The selected bed must belong to the
- * selected ward, and the team/treatment status must exist and remain active.
- * Ward scoping: accounts other than super admin / hospital administrator may
- * only admit into (and keep admissions in) wards they are assigned to.
+ * selected ward, and the treatment status must exist and remain active. The
+ * managing teams are optional and may be more than one. Ward scoping:
+ * accounts other than super admin / hospital administrator may only admit
+ * into (and keep admissions in) wards they are assigned to.
  */
 class EncounterFormRequest extends FormRequest
 {
@@ -37,7 +37,8 @@ class EncounterFormRequest extends FormRequest
                 'exists:beds,id',
                 Rule::exists('beds', 'id')->where(fn ($query) => $query->where('ward_id', $this->input('ward_id'))),
             ],
-            'team_id' => ['required', 'exists:teams,id'],
+            'team_ids' => ['nullable', 'array'],
+            'team_ids.*' => ['string', 'exists:teams,id'],
             'treatment_status_id' => [
                 'required',
                 'exists:treatment_statuses,id',

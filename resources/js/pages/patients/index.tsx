@@ -20,8 +20,8 @@ import type { PatientRecord } from '@/types/patient';
 /**
  * CIMA-050: patient registry (Clinical Operations) — search-first module.
  * Lookup by fullname or patient id; when nothing matches, the inline
- * "Register patient" modal (fullname, patient id, sex, age) closes the
- * gap. Search results are capped server-side; the list is sorted by name.
+ * "Register patient" modal (fullname, patient id, sex, optional age) closes
+ * the gap. Search results are capped server-side; the list is sorted by name.
  */
 export default function PatientsIndex({
     search_query = '',
@@ -169,7 +169,7 @@ export default function PatientsIndex({
                                             </Badge>
                                         </TableCell>
                                         <TableCell data-test="patient-age">
-                                            {patient.age}
+                                            {patient.age ?? '—'}
                                         </TableCell>
                                         {canManageEncounters && (
                                             <TableCell className="text-right">

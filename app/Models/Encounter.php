@@ -7,13 +7,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * CIMA-051: admission record / encounter. One active row per patient while
  * the patient is admitted to a ward/bed; the underlying bed occupancy is
  * represented by the matching `bed_allocations` ledger (CIMA-060).
  */
-#[Fillable(['patient_id', 'ward_id', 'bed_id', 'team_id', 'treatment_status_id', 'arrived_at', 'discharged_at', 'notes'])]
+#[Fillable(['patient_id', 'ward_id', 'bed_id', 'treatment_status_id', 'arrived_at', 'discharged_at', 'notes'])]
 class Encounter extends Model
 {
     use HasUlids;
@@ -53,10 +54,15 @@ class Encounter extends Model
         return $this->belongsTo(Bed::class);
     }
 
-    /** @return BelongsTo<Team, $this> */
-    public function team(): BelongsTo
+    /**
+     * Managing teams. Optional and many-to-many: an admission can be
+     * managed by one, several or no teams.
+     *
+     * @return BelongsToMany<Team, $this>
+     */
+    public function teams(): BelongsToMany
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsToMany(Team::class, 'encounter_team');
     }
 
     /** @return BelongsTo<TreatmentStatus, $this> */

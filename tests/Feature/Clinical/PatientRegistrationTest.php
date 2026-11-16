@@ -112,16 +112,34 @@ class PatientRegistrationTest extends TestCase
             ])
             ->assertSessionHasErrors(['fullname', 'sex', 'age']);
 
-        // A missing field fails too.
+        // A missing required field fails too.
         $this->actingAs($officer)
             ->post(route('patients.store', absolute: false), [
                 'fullname' => 'Ada Obi',
-                'patient_code' => 'P-000002',
                 'sex' => 'female',
             ])
-            ->assertSessionHasErrors(['age']);
+            ->assertSessionHasErrors(['patient_code']);
 
         $this->assertSame(0, Patient::query()->count());
+    }
+
+    public function test_age_is_optional_when_registering_a_patient(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $officer = User::factory()->create();
+        $officer->assignRole('records officer');
+
+        $this->actingAs($officer)
+            ->post(route('patients.store', absolute: false), [
+                'fullname' => 'Noah Reed',
+                'patient_code' => 'P-000004',
+                'sex' => 'male',
+            ])
+            ->assertRedirect(route('patients.index', absolute: false));
+
+        $patient = Patient::query()->sole();
+        $this->assertNull($patient->age);
     }
 
     public function test_duplicate_patient_code_is_rejected(): void

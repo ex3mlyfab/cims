@@ -72,11 +72,10 @@ class WardDisplayTest extends TestCase
             'patient_id' => $patient->id,
             'ward_id' => $ward->id,
             'bed_id' => $bed->id,
-            'team_id' => $team->id,
             'treatment_status_id' => $status->id,
             'arrived_at' => now()->subHours(4),
             'notes' => 'Public display should not reveal notes',
-        ]);
+        ])->teams()->attach($team->id);
 
         BedAllocation::query()->create([
             'bed_id' => $bed->id,
